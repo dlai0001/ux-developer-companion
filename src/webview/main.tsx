@@ -6,6 +6,8 @@ import { post } from './post.js';
 import { BrowserView } from './browser-view/BrowserView.js';
 import { NavBar } from './browser-view/NavBar.js';
 import { Inspector } from './panels/Inspector.js';
+import { DeviceBar } from './panels/DeviceBar.js';
+import { MatrixView } from './panels/MatrixView.js';
 
 function App(): JSX.Element {
   const status = useStore((s) => s.status);
@@ -33,6 +35,9 @@ function App(): JSX.Element {
           break;
         case 'component-tree': s.setTree(m.nodes); break;
         case 'supports-write': s.setSupportsWrite(m.supported); break;
+        case 'breakpoints': s.setBreakpoints(m.widths); break;
+        case 'matrix': s.setMatrix(m.tiles); break;
+        case 'snap-bounds': break;   // consumed by the rulers overlay
         case 'write-result':
           s.setWriteNote(m.ok ? null : `Write failed: ${m.reason ?? 'unknown'}${m.detail ? ` (${m.detail})` : ''}`);
           break;
@@ -49,6 +54,7 @@ function App(): JSX.Element {
       display: 'flex', flexDirection: 'column', color: 'var(--vscode-foreground, #ccc)',
     }}>
       <NavBar />
+      <DeviceBar />
       {status && (
         <div
           data-testid="status"
@@ -64,6 +70,7 @@ function App(): JSX.Element {
       )}
       <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
         <BrowserView />
+        <MatrixView />
         <Inspector />
       </div>
     </div>

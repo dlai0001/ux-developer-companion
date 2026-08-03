@@ -51,7 +51,7 @@ const pointOn = async (session: BrowserSession, testid: string): Promise<{ x: nu
 describe.skipIf(!existsSync(join(REACT_DEV, 'index.html')) || !existsSync(AGENT))('M5 React overrides', () => {
   let srv: Server; let session: BrowserSession;
   beforeAll(async () => { ({ srv, session } = await open(REACT_DEV, 5388, 'react')); }, 120_000);
-  afterAll(async () => { await session?.dispose(); await new Promise<void>((r) => srv?.close(() => r())); });
+  afterAll(async () => { await session?.dispose(); srv?.closeAllConnections(); await new Promise<void>((r) => srv?.close(() => r())); });
 
   it('reports write support on a dev build', async () => {
     expect(await session.supportsWrite()).toBe(true);
@@ -98,7 +98,7 @@ describe.skipIf(!existsSync(join(REACT_DEV, 'index.html')) || !existsSync(AGENT)
 describe.skipIf(!existsSync(join(REACT_PROD, 'index.html')) || !existsSync(AGENT))('M5 production build refuses writes', () => {
   let srv: Server; let session: BrowserSession;
   beforeAll(async () => { ({ srv, session } = await open(REACT_PROD, 5387, 'prod')); }, 120_000);
-  afterAll(async () => { await session?.dispose(); await new Promise<void>((r) => srv?.close(() => r())); });
+  afterAll(async () => { await session?.dispose(); srv?.closeAllConnections(); await new Promise<void>((r) => srv?.close(() => r())); });
 
   it('reports no write support and REFUSES the write instead of silently doing nothing', async () => {
     const cdp = session.connection!;
@@ -120,7 +120,7 @@ describe.skipIf(!existsSync(join(REACT_PROD, 'index.html')) || !existsSync(AGENT
 describe.skipIf(!existsSync(join(NG_DIST, 'index.html')) || !existsSync(AGENT))('M5 Angular overrides', () => {
   let srv: Server; let session: BrowserSession;
   beforeAll(async () => { ({ srv, session } = await open(NG_DIST, 5386, 'ng')); }, 120_000);
-  afterAll(async () => { await session?.dispose(); await new Promise<void>((r) => srv?.close(() => r())); });
+  afterAll(async () => { await session?.dispose(); srv?.closeAllConnections(); await new Promise<void>((r) => srv?.close(() => r())); });
 
   it('sets a signal-backed state value and the DOM reflects it', async () => {
     const cdp = session.connection!;

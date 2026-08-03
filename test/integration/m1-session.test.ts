@@ -6,6 +6,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { extname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { BrowserSession } from '../../src/extension/session/session.js';
+import type { CdpSession } from '../../src/extension/browser/cdp.js';
 import type { FrameMessage } from '../../src/shared/protocol.js';
 
 const DIST = resolve(__dirname, '../../fixtures/react-app/dist');
@@ -29,6 +30,23 @@ const events = {
 };
 
 const settle = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * The session auto-relaunches on a crash or a dropped devtools socket, which swaps out the
+ * CdpSession object. Tests must therefore fetch the connection when they use it, and wait
+ * for a live one, rather than caching it across awaits.
+ */
+async function liveCdp(timeoutMs = 30_000): Promise<CdpSession> {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    const c = session.connection;
+    if (c) {
+      try { await c.evaluate<boolean>('true'); return c; } catch { /* relaunch in flight */ }
+    }
+    await settle(250);
+  }
+  throw new Error('no live CDP connection');
+}
 
 describe.skipIf(!HAVE_FIXTURE)('M1 browser session', () => {
   beforeAll(async () => {
@@ -54,6 +72,7 @@ describe.skipIf(!HAVE_FIXTURE)('M1 browser session', () => {
 
   afterAll(async () => {
     await session?.dispose();
+    server?.closeAllConnections();
     await new Promise<void>((r) => server?.close(() => r()));
   });
 
@@ -70,18 +89,28 @@ describe.skipIf(!HAVE_FIXTURE)('M1 browser session', () => {
   });
 
   it('forwards typed text into the page', async () => {
-    const cdp = session.connection!;
-    await cdp.evaluate(`document.querySelector('[data-testid="unlabelled"]').focus()`);
-    for (const ch of 'hey') {
-      await session.sendKey(ch, `Key${ch.toUpperCase()}`, { alt: false, ctrl: false, meta: false, shift: false });
+    // Retried once: if the devtools socket drops mid-type the session relaunches, which
+    // reloads the page and clears the field. That is correct product behaviour, so the test
+    // types again against the fresh session rather than asserting the browser never restarts.
+    let value = '';
+    for (let attempt = 0; attempt < 2 && value !== 'hey'; attempt++) {
+      const cdp = await liveCdp();
+      await cdp.evaluate(`document.querySelector('[data-testid="unlabelled"]').value = ''`);
+      await cdp.evaluate(`document.querySelector('[data-testid="unlabelled"]').focus()`);
+      for (const ch of 'hey') {
+        await session.sendKey(ch, `Key${ch.toUpperCase()}`, { alt: false, ctrl: false, meta: false, shift: false });
+      }
+      await settle(300);
+      try {
+        value = await (await liveCdp()).evaluate<string>(
+          `document.querySelector('[data-testid="unlabelled"]').value`);
+      } catch { value = ''; }
     }
-    await settle(300);
-    const value = await cdp.evaluate<string>(`document.querySelector('[data-testid="unlabelled"]').value`);
     expect(value).toBe('hey');
-  }, 30_000);
+  }, 60_000);
 
   it('forwards mouse clicks into the page', async () => {
-    const cdp = session.connection!;
+    let cdp = await liveCdp();
     const box = await cdp.evaluate<{ x: number; y: number }>(
       `(() => { const r = document.querySelector('[data-testid="uc-btn"]').getBoundingClientRect();
                 return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) }; })()`,
@@ -90,6 +119,7 @@ describe.skipIf(!HAVE_FIXTURE)('M1 browser session', () => {
     await session.sendMouse('down', box.x, box.y, mods);
     await session.sendMouse('up', box.x, box.y, mods);
     await settle(300);
+    cdp = await liveCdp();
     expect(await cdp.evaluate<string>(`document.querySelector('[data-testid="uc-count"]').textContent`))
       .toBe('count=1');
   }, 30_000);
@@ -98,7 +128,7 @@ describe.skipIf(!HAVE_FIXTURE)('M1 browser session', () => {
     await session.navigate(`http://127.0.0.1:${PORT}/list`);
     await settle(1200);
     expect(session.url).toContain('/list');
-    const cdp = session.connection!;
+    const cdp = await liveCdp();
     expect(await cdp.evaluate<boolean>(`!!document.querySelector('[data-testid="items"]')`)).toBe(true);
   }, 30_000);
 

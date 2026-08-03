@@ -39,6 +39,14 @@ export interface AppState {
   setPickMode(on: boolean): void;
   setSupportsWrite(v: boolean): void;
   setWriteNote(note: string | null): void;
+  breakpoints: number[];
+  device: string | null;
+  rotated: boolean;
+  matrix: Array<{ width: number; png: string }>;
+  setBreakpoints(w: number[]): void;
+  setDevice(id: string | null): void;
+  setRotated(v: boolean): void;
+  setMatrix(t: Array<{ width: number; png: string }>): void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -78,4 +86,12 @@ export const useStore = create<AppState>((set) => ({
   setPickMode: (pickMode) => set({ pickMode }),
   setSupportsWrite: (supportsWrite) => set({ supportsWrite }),
   setWriteNote: (writeNote) => set({ writeNote }),
+  breakpoints: [],
+  device: null,
+  rotated: false,
+  matrix: [],
+  setBreakpoints: (breakpoints) => set({ breakpoints }),
+  setDevice: (device) => set({ device }),
+  setRotated: (rotated) => set({ rotated }),
+  setMatrix: (matrix) => set({ matrix }),
 }));

@@ -8,6 +8,7 @@ import { forwardKey, forwardMouse } from './input.js';
 import { readFileSync } from 'node:fs';
 import { AGENT_BINDING, AGENT_GLOBAL, type ComponentInfo, type ComponentTreeNode,
          type Json, type WriteResult } from '../../shared/agent-api.js';
+import type { DevicePreset } from '../../shared/devices.js';
 import type { FrameMessage, InputModifiers, MouseKind } from '../../shared/protocol.js';
 
 export interface SessionEvents {
@@ -35,6 +36,7 @@ export class BrowserSession {
   private currentUrl = '';
   private viewportSize = { width: DEFAULT_SCREENCAST.maxWidth, height: DEFAULT_SCREENCAST.maxHeight };
   private agentInstalled = false;
+  private tearingDown = false;
 
   constructor(private readonly cfg: SessionConfig, private readonly events: SessionEvents) {}
 
@@ -57,7 +59,7 @@ export class BrowserSession {
       this.currentUrl = url;
       this.events.onUrlChanged(url);
     });
-    this.cdp.onCrashed(() => { void this.handleCrash(); });
+    this.cdp.onCrashed((reason) => { void this.handleCrash(reason); });
     this.browser.proc.once('exit', (code) => {
       if (!this.disposed) void this.handleCrash(`browser exited (code ${code ?? 'null'})`);
     });
@@ -166,10 +168,64 @@ export class BrowserSession {
     await this.screencast.restart({ maxWidth: w, maxHeight: h });
   }
 
+  /** Apply a device preset: metrics + DPR + touch + UA (PLAN §4.6). */
+  async applyDevice(preset: DevicePreset | null): Promise<void> {
+    if (!this.cdp || !this.screencast) return;
+    if (!preset) {
+      await this.cdp.clearViewport();
+      await this.cdp.setTouchEmulation(false);
+      await this.resize(this.viewportSize.width, this.viewportSize.height);
+      return;
+    }
+    await this.cdp.setViewport({
+      width: preset.width, height: preset.height,
+      deviceScaleFactor: preset.dpr, mobile: preset.touch,
+    });
+    await this.cdp.setTouchEmulation(preset.touch);
+    if (preset.userAgent) await this.cdp.setUserAgent(preset.userAgent);
+    this.viewportSize = { width: preset.width, height: preset.height };
+    this.events.onViewportChanged(preset.width, preset.height);
+    await this.screencast.restart({ maxWidth: preset.width, maxHeight: preset.height });
+  }
+
+  /**
+   * Responsive matrix (PLAN §4.6). Uses ONE target sequentially — resize, settle, shoot —
+   * rather than N parallel targets, which §8 lists as the fallback and which avoids N browser
+   * tabs competing for the same screencast machinery.
+   */
+  async responsiveMatrix(widths: number[], height = 800): Promise<Array<{ width: number; png: string }>> {
+    if (!this.cdp || !this.screencast) return [];
+    const original = { ...this.viewportSize };
+    const out: Array<{ width: number; png: string }> = [];
+    // The live stream would fight the resizes; stop it and restore afterwards.
+    await this.screencast.stop();
+    try {
+      for (const width of widths) {
+        await this.cdp.setViewport({ width, height, deviceScaleFactor: 1, mobile: false });
+        await new Promise((r) => setTimeout(r, 250));   // let layout settle
+        out.push({ width, png: await this.cdp.captureScreenshot() });
+      }
+    } finally {
+      await this.cdp.setViewport({ ...original, deviceScaleFactor: 1, mobile: false });
+      this.viewportSize = original;
+      await this.screencast.start({ maxWidth: original.width, maxHeight: original.height });
+    }
+    return out;
+  }
+
+  /** Bounds of the element under a point — the snap targets for guides. */
+  async elementBounds(x: number, y: number): Promise<{ x: number; y: number; width: number; height: number } | null> {
+    return this.agent<{ x: number; y: number; width: number; height: number } | null>(
+      `a.elementBounds(${x}, ${y})`,
+    );
+  }
+
   async sendKey(key: string, code: string, mods: InputModifiers): Promise<void> {
     if (!this.cdp) return;
     this.screencast?.noteActivity();
-    await forwardKey(this.cdp, key, code, mods);
+    // A dropped devtools socket must not throw into the webview message handler; the crash
+    // handler relaunches and the user simply retypes.
+    try { await forwardKey(this.cdp, key, code, mods); } catch { /* relaunch in flight */ }
   }
 
   async sendMouse(
@@ -178,12 +234,13 @@ export class BrowserSession {
   ): Promise<void> {
     if (!this.cdp) return;
     this.screencast?.noteActivity();
-    await forwardMouse(this.cdp, kind, x, y, mods, delta);
+    try { await forwardMouse(this.cdp, kind, x, y, mods, delta); } catch { /* relaunch in flight */ }
   }
 
   /** Auto-relaunch once, then surface an error (PLAN §4.1). */
   private async handleCrash(reason = 'browser crashed'): Promise<void> {
-    if (this.disposed) return;
+    // Ignore events caused by our own teardown, or the relaunch tears itself down again.
+    if (this.disposed || this.tearingDown) return;
     if (this.relaunchedOnce) {
       this.events.onStatus(`Browser crashed again (${reason}); giving up. Reopen the panel to retry.`, 'error');
       await this.teardown();
@@ -201,12 +258,14 @@ export class BrowserSession {
   }
 
   private async teardown(): Promise<void> {
+    this.tearingDown = true;
     this.screencast?.dispose();
     this.screencast = undefined;
     await this.cdp?.close();
     this.cdp = undefined;
     this.browser?.kill();
     this.browser = undefined;
+    this.tearingDown = false;
   }
 
   async dispose(): Promise<void> {

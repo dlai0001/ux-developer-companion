@@ -49,6 +49,7 @@ describe.skipIf(!HAVE)('M2 page agent — React', () => {
 
   afterAll(async () => {
     await session?.dispose();
+    server?.closeAllConnections();
     await new Promise<void>((r) => server?.close(() => r()));
   });
 
@@ -129,6 +130,7 @@ describe.skipIf(!existsSync(join(PROD_DIST, 'index.html')))('M2 page agent — p
 
   afterAll(async () => {
     await prod?.dispose();
+    prodServer?.closeAllConnections();
     await new Promise<void>((r) => prodServer?.close(() => r()));
   });
 

@@ -13,6 +13,8 @@ export interface LaunchedBrowser {
   wsPath: string;
   /** Which discovery mechanism won — useful in bug reports. */
   via: 'DevToolsActivePort' | 'stderr';
+  /** The profile we launched with; also how surviving children are identified. */
+  userDataDir: string;
   kill(): void;
 }
 
@@ -132,36 +134,48 @@ async function attemptLaunch(opts: LaunchOptions): Promise<LaunchedBrowser> {
         const [p, ws] = readFileSync(portFile, 'utf8').split('\n');
         if (p && ws) {
           return { proc, port: Number(p), wsPath: ws.trim(), via: 'DevToolsActivePort',
-                   kill: () => killTree(proc) };
+                   userDataDir, kill: () => killTree(proc, userDataDir) };
         }
       }
       const m = /DevTools listening on ws:\/\/([^/]+)(\/devtools\/browser\/\S+)/.exec(stderr);
       if (m?.[1] && m[2]) {
         return { proc, port: Number(m[1].split(':').pop()), wsPath: m[2], via: 'stderr',
-                 kill: () => killTree(proc) };
+                 userDataDir, kill: () => killTree(proc, userDataDir) };
       }
       await new Promise((r) => setTimeout(r, 100));
     }
   } catch (e) {
-    killTree(proc);
+    killTree(proc, userDataDir);
     throw e;
   }
   // MUST kill on the timeout path, or an orphan keeps the profile and poisons every retry.
-  killTree(proc);
+  killTree(proc, userDataDir);
   throw new Error(`Browser port discovery timed out after ${timeoutMs}ms.\n${stderr.slice(-1500)}`);
 }
 
 /** Kill the browser and every process it spawned. */
-export function killTree(proc: ChildProcess): void {
-  if (proc.pid === undefined) return;
+export function killTree(proc: ChildProcess, userDataDir?: string): void {
   if (process.platform === 'win32') {
-    try { spawn('taskkill', ['/pid', String(proc.pid), '/T', '/F'], { stdio: 'ignore' }); } catch { /* gone */ }
+    if (proc.pid !== undefined && proc.exitCode === null) {
+      try { spawn('taskkill', ['/pid', String(proc.pid), '/T', '/F'], { stdio: 'ignore' }); } catch { /* gone */ }
+    }
     return;
   }
-  try {
-    // Negative pid targets the process GROUP, which `detached: true` gave us.
-    process.kill(-proc.pid, 'SIGKILL');
-  } catch {
-    try { proc.kill('SIGKILL'); } catch { /* already gone */ }
+
+  // Only signal a process GROUP while the child is still alive. macOS recycles pids quickly
+  // under churn, so kill(-pid) on a dead pid can land on an UNRELATED group — that showed up
+  // as another session's CDP socket closing for no visible reason.
+  if (proc.pid !== undefined && proc.exitCode === null && proc.signalCode === null) {
+    try { process.kill(-proc.pid, 'SIGKILL'); } catch {
+      try { proc.kill('SIGKILL'); } catch { /* already gone */ }
+    }
+  }
+
+  // Sweep any survivors by profile directory. Chrome's helper processes carry the same
+  // --user-data-dir, the directory is ours alone, and matching on it is immune to pid reuse —
+  // so this reaps children whose parent already exited without risking anything else.
+  if (userDataDir) {
+    try { spawn('pkill', ['-f', `--user-data-dir=${userDataDir}`], { stdio: 'ignore' }).unref(); }
+    catch { /* pkill unavailable; the group kill above is the fallback */ }
   }
 }

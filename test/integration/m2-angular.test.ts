@@ -42,6 +42,7 @@ describe.skipIf(!HAVE)('M2 page agent — Angular', () => {
 
   afterAll(async () => {
     await session?.dispose();
+    server?.closeAllConnections();
     await new Promise<void>((r) => server?.close(() => r()));
   });
 

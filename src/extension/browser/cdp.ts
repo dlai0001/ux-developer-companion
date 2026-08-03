@@ -13,6 +13,9 @@ export interface ScreencastFrame {
 export type MouseEventType = 'mousePressed' | 'mouseReleased' | 'mouseMoved' | 'mouseWheel';
 
 export class CdpSession {
+  /** Set before we close deliberately, so our own teardown is not reported as a crash. */
+  private closing = false;
+
   private constructor(private readonly client: CDPClient) {}
 
   static async connect(port: number): Promise<CdpSession> {
@@ -90,8 +93,12 @@ export class CdpSession {
     });
   }
 
-  onCrashed(cb: () => void): void {
-    this.client.on('Inspector.targetCrashed', () => cb());
+  onCrashed(cb: (reason: string) => void): void {
+    this.client.on('Inspector.targetCrashed', () => cb('renderer crashed'));
+    // The CDP socket can also drop without the process exiting (heavy load, a killed helper).
+    // Without this the panel just freezes: frames stop and every call rejects.
+    (this.client as unknown as { on(e: string, l: () => void): void })
+      .on('disconnect', () => { if (!this.closing) cb('devtools connection lost'); });
   }
 
   // ---------------------------------------------------------------- screencast
@@ -198,6 +205,7 @@ export class CdpSession {
   get raw(): CDPClient { return this.client; }
 
   async close(): Promise<void> {
+    this.closing = true;
     await this.client.close().catch(() => undefined);
   }
 }

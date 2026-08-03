@@ -35,7 +35,10 @@ export type HostToWebview =
   | { type: 'request-copy-to-clipboard' }
   | { type: 'component-tree'; nodes: ComponentTreeNode[] }
   | { type: 'write-result'; ok: boolean; reason?: string; detail?: string }
-  | { type: 'supports-write'; supported: boolean };
+  | { type: 'supports-write'; supported: boolean }
+  | { type: 'breakpoints'; widths: number[] }
+  | { type: 'matrix'; tiles: Array<{ width: number; png: string }> }
+  | { type: 'snap-bounds'; bounds: { x: number; y: number; width: number; height: number } | null };
 
 export type MouseKind = 'down' | 'up' | 'move' | 'wheel';
 
@@ -68,7 +71,12 @@ export type WebviewToHost =
   | { type: 'select-component'; id: number }
   | { type: 'write-state'; id: number; path: Array<string | number>; value: Json }
   /** Crosshair pick mode: next click in the page resolves instead of being forwarded. */
-  | { type: 'set-pick-mode'; enabled: boolean };
+  | { type: 'set-pick-mode'; enabled: boolean }
+  | { type: 'set-device'; presetId: string | null; rotated: boolean }
+  | { type: 'set-width'; width: number }
+  | { type: 'request-breakpoints' }
+  | { type: 'request-matrix'; widths: number[] }
+  | { type: 'snap-target'; x: number; y: number };
 
 /** Narrowing helper shared by both sides so neither hand-rolls `as` casts. */
 export function isHostToWebview(m: unknown): m is HostToWebview {

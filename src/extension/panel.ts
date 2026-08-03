@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { join } from 'node:path';
 import { isWebviewToHost, type HostToWebview, type WebviewToHost } from '../shared/protocol.js';
 import type { Annotation } from '../shared/annotations.js';
+import { findPreset, rotate } from '../shared/devices.js';
 import { BrowserSession } from './session/session.js';
 import { capture } from './session/capture.js';
 import { composeContext, routeOf } from './copilot/composer.js';
@@ -126,6 +127,26 @@ export class BrowserPanel {
         break;   // purely webview-side state
       case 'set-pick-mode':
         this.pickMode = msg.enabled;
+        break;
+      case 'set-device': {
+        const base = msg.presetId ? findPreset(msg.presetId) ?? null : null;
+        await this.session?.applyDevice(base && msg.rotated ? rotate(base) : base);
+        break;
+      }
+      case 'set-width':
+        // Breakpoint slider: change width only, keep the current height.
+        await this.session?.resize(msg.width, this.lastViewport.height);
+        break;
+      case 'request-breakpoints':
+        this.post({ type: 'breakpoints', widths: (await this.session?.breakpoints()) ?? [] });
+        break;
+      case 'request-matrix': {
+        const tiles = (await this.session?.responsiveMatrix(msg.widths)) ?? [];
+        this.post({ type: 'matrix', tiles });
+        break;
+      }
+      case 'snap-target':
+        this.post({ type: 'snap-bounds', bounds: (await this.session?.elementBounds(msg.x, msg.y)) ?? null });
         break;
       case 'request-tree': {
         const nodes = (await this.session?.componentTree(msg.maxDepth)) ?? [];

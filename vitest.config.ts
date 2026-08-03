@@ -6,6 +6,11 @@ export default defineConfig({
     // files concurrently makes them contend and fail non-deterministically, so files run one
     // at a time. Unit tests are fast enough that this costs nothing.
     fileParallelism: false,
+    // Each integration file drives a real browser. Sharing one worker across files let state
+    // leak between them (an earlier file's teardown closing a later file's CDP socket), so
+    // every file gets a fresh forked process.
+    pool: 'forks',
+    poolOptions: { forks: { isolate: true, singleFork: false } },
     testTimeout: 30_000,
     hookTimeout: 120_000,
     exclude: ['**/node_modules/**', '**/dist/**', 'spikes/**', 'fixtures/**'],

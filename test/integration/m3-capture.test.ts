@@ -41,6 +41,7 @@ describe.skipIf(!HAVE)('M3 annotations + capture', () => {
 
   afterAll(async () => {
     await session?.dispose();
+    server?.closeAllConnections();
     await new Promise<void>((r) => server?.close(() => r()));
     rmSync(OUT, { recursive: true, force: true });
   });

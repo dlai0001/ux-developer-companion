@@ -53,6 +53,7 @@ describe.skipIf(!HAVE_FIXTURE)('React fixture over CDP', () => {
   afterAll(async () => {
     await client?.close().catch(() => undefined);
     browser?.kill();
+    server?.closeAllConnections();
     await new Promise<void>((r) => server?.close(() => r()));
   });
 

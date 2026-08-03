@@ -26,6 +26,8 @@ interface AgentApi {
    * transform that rewrites imports.
    */
   composite(baseB64: string, annotations: Annotation[]): Promise<string>;
+  /** Bounds of the element under a point, for guide snapping (PLAN §4.6). */
+  elementBounds(x: number, y: number): { x: number; y: number; width: number; height: number } | null;
 }
 
 declare global {
@@ -67,6 +69,12 @@ const api: AgentApi = {
   writeState: (id, path, value) =>
     activeAdapter()?.writeState(id, path, value) ?? { ok: false, reason: 'unsupported' },
   supportsWrite: () => activeAdapter()?.supportsWrite ?? false,
+  elementBounds: (x, y) => {
+    const el = document.elementFromPoint(x, y);
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return { x: Math.round(r.x), y: Math.round(r.y), width: Math.round(r.width), height: Math.round(r.height) };
+  },
   composite: async (baseB64, annotations) => {
     const img = new Image();
     img.src = `data:image/png;base64,${baseB64}`;
