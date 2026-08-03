@@ -25,6 +25,8 @@ export const DEFAULT_SCREENCAST: ScreencastOptions = {
   idleAfterMs: 10_000,
 };
 
+const delay = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+
 export class ScreencastController {
   private running = false;
   private paused = false;
@@ -32,6 +34,14 @@ export class ScreencastController {
   private lastActivity = Date.now();
   /** Diagnostics: raw CDP frames seen, independent of what reached the webview. */
   public framesReceived = 0;
+  /**
+   * Serializes every stop/start pair. Two startScreencast calls with no stop between them wedge
+   * the stream for good (see start()), and a debounced resize landing mid-start is exactly how
+   * that happens — so no two stream operations may ever overlap.
+   */
+  private queue: Promise<unknown> = Promise.resolve();
+  /** Bumped on every (re)start so an in-flight seed from a superseded start stays quiet. */
+  private generation = 0;
 
   constructor(
     private readonly cdp: CdpSession,
@@ -55,7 +65,18 @@ export class ScreencastController {
   get options(): ScreencastOptions { return this.opts; }
   get isRunning(): boolean { return this.running && !this.paused; }
 
+  /** Runs `fn` with no other stream operation in flight. */
+  private serialize<T>(fn: () => Promise<T>): Promise<T> {
+    const run = this.queue.then(fn, fn);
+    this.queue = run.catch(() => undefined);
+    return run;
+  }
+
   async start(overrides: Partial<ScreencastOptions> = {}): Promise<void> {
+    return this.serialize(() => this.startNow(overrides));
+  }
+
+  private async startNow(overrides: Partial<ScreencastOptions> = {}): Promise<void> {
     this.opts = { ...this.opts, ...overrides };
     // Always stop first. Two startScreencast calls with no stop between them wedge the stream:
     // Chrome keeps delivering to the superseded session, so no further frames ever arrive —
@@ -72,9 +93,36 @@ export class ScreencastController {
     // Reset the idle clock. Without this, a restart after an idle pause re-pauses on the very
     // next timer tick — before a single frame arrives — because lastActivity is still stale.
     this.lastActivity = Date.now();
+    // Baseline BEFORE the repaint, so a healthy stream short-circuits the seed on its first
+    // check instead of forcing a second, redundant repaint.
+    const before = this.framesReceived;
     // Without this the canvas stays blank on a static page — no repaint means no frames.
     await this.cdp.forceRepaint();
     this.armIdleTimer();
+    // Deliberately not awaited: it spends up to ~600 ms confirming a frame actually landed, and
+    // callers (panel startup, resize) must not block on that.
+    void this.seedFirstFrame(++this.generation, before);
+  }
+
+  /**
+   * Guarantees the canvas gets a picture. forceRepaint() alone is not enough: on a static page
+   * the repaint is the ONLY chance at a frame, and if it lands before Chrome has finished arming
+   * the screencast the frame is never produced — the canvas then stays black until the user
+   * happens to navigate. Retry the repaint once, then fall back to a direct screenshot, which
+   * does not depend on catching a repaint at all.
+   */
+  private async seedFirstFrame(gen: number, seen: number): Promise<void> {
+    const stale = (): boolean => gen !== this.generation || !this.running || this.paused;
+    try {
+      await delay(300);
+      if (stale() || this.framesReceived > seen) return;
+      await this.cdp.forceRepaint();
+      await delay(300);
+      if (stale() || this.framesReceived > seen) return;
+      const data = await this.cdp.captureJpeg(this.opts.quality);
+      if (stale() || this.framesReceived > seen) return;
+      this.send({ type: 'frame', data, sentAt: Date.now(), capturedAt: null });
+    } catch { /* best effort — a missing seed only costs the blank canvas we already had */ }
   }
 
   /** Restart after a resize or metrics change (debounced by the caller). */
@@ -83,9 +131,12 @@ export class ScreencastController {
   }
 
   async stop(): Promise<void> {
-    this.clearIdleTimer();
-    this.running = false;
-    await this.cdp.stopScreencast();
+    return this.serialize(async () => {
+      this.generation++;   // cancel any seed still waiting on the stream we are tearing down
+      this.clearIdleTimer();
+      this.running = false;
+      await this.cdp.stopScreencast();
+    });
   }
 
   /** Called on any user input so an interactive session never idles out mid-use. */
@@ -108,25 +159,33 @@ export class ScreencastController {
   }
 
   private async pause(): Promise<void> {
-    if (this.paused) return;
-    this.paused = true;
-    await this.cdp.stopScreencast();
+    return this.serialize(async () => {
+      if (this.paused) return;
+      this.paused = true;
+      await this.cdp.stopScreencast();
+    });
   }
 
   private async resume(): Promise<void> {
-    if (!this.paused) return;
-    this.paused = false;
-    await this.cdp.startScreencast({
-      quality: this.opts.quality,
-      everyNthFrame: this.opts.everyNthFrame,
-      maxWidth: this.opts.maxWidth,
-      maxHeight: this.opts.maxHeight,
+    return this.serialize(async () => {
+      if (!this.paused) return;
+      this.paused = false;
+      await this.cdp.startScreencast({
+        quality: this.opts.quality,
+        everyNthFrame: this.opts.everyNthFrame,
+        maxWidth: this.opts.maxWidth,
+        maxHeight: this.opts.maxHeight,
+      });
+      const before = this.framesReceived;
+      await this.cdp.forceRepaint();
+      // Resuming has the same arming race as a cold start, and the page may well be static.
+      void this.seedFirstFrame(++this.generation, before);
     });
-    await this.cdp.forceRepaint();
   }
 
   dispose(): void {
     this.clearIdleTimer();
     this.running = false;
+    this.generation++;   // no seed may fire against a disposed session
   }
 }

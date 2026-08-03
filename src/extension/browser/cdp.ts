@@ -278,6 +278,12 @@ export class CdpSession {
     return data;
   }
 
+  /** JPEG variant, matching the screencast's own encoding so a frame can be seeded from it. */
+  async captureJpeg(quality: number): Promise<string> {
+    const { data } = await this.client.Page.captureScreenshot({ format: 'jpeg', quality });
+    return data;
+  }
+
   async evaluate<T>(expression: string): Promise<T> {
     const { result, exceptionDetails } = await this.client.Runtime.evaluate({
       expression, returnByValue: true, awaitPromise: true,
