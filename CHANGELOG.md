@@ -2,6 +2,22 @@
 
 All notable changes to UX Developer Companion.
 
+## [0.0.3] — 2026-08-03
+
+### Changed
+- **One Shape button** instead of separate Box and Circle; pressing it again switches between
+  box and circle, and the icon shows which is active.
+- **Snap back to Browse after drawing**, so the next click interacts with the page instead of
+  starting another mark.
+- **Callout is now click-and-drag**: press on the thing you are commenting on to set the tail
+  target, then drag out to place the bubble. The bubble starts about ten characters wide and
+  grows as you type.
+- **Callouts are filled** in the annotation colour with white text, so a comment reads as a
+  comment rather than as part of the UI.
+- **One colour swatch with a colour picker**, replacing the four-swatch palette. Defaults to
+  solid red.
+- **Responsive, inspector and testing panels are hidden** behind a Tools toggle.
+
 ## [0.0.2] — 2026-08-03
 
 ### Changed

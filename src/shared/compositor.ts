@@ -11,7 +11,9 @@ type Ctx = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
 const ARROW_HEAD = 12;
 const CALLOUT_PAD = 8;
-const CALLOUT_MAX_W = 240;
+const CALLOUT_MAX_W = 260;
+/** Empty callouts start about ten characters wide and grow as the user types. */
+const CALLOUT_MIN_CHARS = 10;
 
 /**
  * NOTE: this module is also serialized function-by-function and evaluated INSIDE the page by
@@ -74,19 +76,20 @@ export function drawCallout(ctx: Ctx, a: Annotation, s: number): void {
   const lines = wrapText(ctx, a.text ?? '', CALLOUT_MAX_W * s);
   const lineHeight = Math.round(17 * s);
   const pad = CALLOUT_PAD * s;
+  const minWidth = ctx.measureText('0'.repeat(CALLOUT_MIN_CHARS)).width + pad * 2;
   const width = Math.max(
-    40 * s,
+    minWidth,
     Math.min(CALLOUT_MAX_W * s, Math.max(...lines.map((l) => ctx.measureText(l).width), 0)) + pad * 2,
   );
   const height = lines.length * lineHeight + pad * 2;
   const x = a.from.x * s;
   const y = a.from.y * s;
 
+  // Solid fill in the annotation colour with white text: a filled bubble reads as a comment
+  // rather than as part of the UI being annotated.
   roundRect(ctx, x, y, width, height, 6 * s);
-  ctx.globalAlpha = 0.92;
-  ctx.fillStyle = '#ffffff';
+  ctx.fillStyle = a.color;
   ctx.fill();
-  ctx.globalAlpha = 1;
   ctx.strokeStyle = a.color;
   ctx.stroke();
 
@@ -101,15 +104,13 @@ export function drawCallout(ctx: Ctx, a: Annotation, s: number): void {
     ctx.lineTo(cx + 6 * s, cy);
     ctx.lineTo(ax, ay);
     ctx.closePath();
-    ctx.globalAlpha = 0.92;
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = a.color;
     ctx.fill();
-    ctx.globalAlpha = 1;
     ctx.strokeStyle = a.color;
     ctx.stroke();
   }
 
-  ctx.fillStyle = '#16202c';
+  ctx.fillStyle = '#ffffff';
   ctx.textBaseline = 'top';
   lines.forEach((line, i) => ctx.fillText(line, x + pad, y + pad + i * lineHeight));
 }

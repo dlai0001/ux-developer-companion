@@ -27,11 +27,9 @@ describe('annotation geometry', () => {
       .toEqual({ x: 3, y: 4 });
   });
 
-  it('treats a click without a drag as degenerate (but never a callout)', () => {
+  it('treats a shape click without a drag as degenerate', () => {
     expect(isDegenerate(mk({ from: { x: 5, y: 5 }, to: { x: 6, y: 6 } }))).toBe(true);
     expect(isDegenerate(mk({ from: { x: 5, y: 5 }, to: { x: 60, y: 60 } }))).toBe(false);
-    // A callout is placed by a click and gets its size from its text.
-    expect(isDegenerate(mk({ kind: 'callout', from: { x: 5, y: 5 }, to: { x: 5, y: 5 } }))).toBe(false);
   });
 
   it('anchors a circle at its centre and a text label at its origin', () => {
@@ -41,14 +39,24 @@ describe('annotation geometry', () => {
       .toEqual({ x: 9, y: 11 });
   });
 
-  it('knows which kinds are placed by a click rather than dragged', () => {
-    // Text and callout size themselves from their content, so a zero-drag placement is valid;
-    // treating them as degenerate would silently discard every one the user creates.
+  it('places text with a click but DRAGS a callout', () => {
+    // The callout press point is the tail target; the drag positions the bubble. Treating it
+    // as click-placed would commit it before the user has aimed it.
     expect(isClickPlaced('text')).toBe(true);
-    expect(isClickPlaced('callout')).toBe(true);
+    expect(isClickPlaced('callout')).toBe(false);
     for (const k of ['rect', 'ellipse', 'arrow'] as const) expect(isClickPlaced(k)).toBe(false);
+  });
+
+  it('never discards a text or callout for lack of a drag', () => {
     expect(isDegenerate(mk({ kind: 'text', from: { x: 5, y: 5 }, to: { x: 5, y: 5 } }))).toBe(false);
+    expect(isDegenerate(mk({ kind: 'callout', from: { x: 5, y: 5 }, to: { x: 5, y: 5 } }))).toBe(false);
+    // Shapes still need a real drag.
     expect(isDegenerate(mk({ kind: 'ellipse', from: { x: 5, y: 5 }, to: { x: 6, y: 6 } }))).toBe(true);
+  });
+
+  it('defaults to solid red', async () => {
+    const { DEFAULT_COLOR } = await import('../../src/shared/annotations.js');
+    expect(DEFAULT_COLOR).toBe('#ff0000');
   });
 
   it('generates distinct ids', () => {

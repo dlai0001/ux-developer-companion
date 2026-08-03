@@ -61,12 +61,23 @@ export function AnnotationLayer({ viewport }: Props): JSX.Element | null {
     // Anchor-resolve on creation for ALL kinds (PLAN §4.4).
     const p = anchorPoint(a);
     post({ type: 'resolve-annotation', id: a.id, x: p.x, y: p.y });
-    if (isClickPlaced(a.kind)) {
+    if (a.kind === 'text' || a.kind === 'callout') {
       const c = canvasRef.current;
       const r = c?.getBoundingClientRect();
       const scale = r && viewport ? r.width / viewport.width : 1;
       setEditing({ id: a.id, x: a.from.x * scale, y: a.from.y * scale });
+      return;   // snap back to browse only once the text is committed
     }
+    snapBackToBrowse();
+  };
+
+  /**
+   * After a mark is finished, return to Browse so the next click interacts with the page.
+   * Otherwise every stray click keeps drawing and the page feels frozen.
+   */
+  const snapBackToBrowse = (): void => {
+    useStore.getState().setMode('browse');
+    post({ type: 'set-mode', mode: 'browse' });
   };
 
   return (
@@ -83,12 +94,13 @@ export function AnnotationLayer({ viewport }: Props): JSX.Element | null {
           const p = toPage(e);
           const kind: AnnotationKind = tool;
           const fresh: Annotation = {
+            // A callout's press point is the TAIL TARGET; the drag then places the bubble.
             id: newId(++seed.current), kind, from: p, to: p, color,
             ...(kind === 'callout' ? { text: '', anchor: p } : {}),
             ...(kind === 'text' ? { text: '' } : {}),
           };
-          // Text and callout are placed by a click, so commit immediately and open the editor
-          // rather than waiting for a drag that will never come.
+          // Text is placed by a single click, so commit now rather than waiting for a drag
+          // that never comes.
           if (isClickPlaced(kind)) { commit(fresh); return; }
           setDraft(fresh);
         }}
@@ -106,12 +118,22 @@ export function AnnotationLayer({ viewport }: Props): JSX.Element | null {
           autoFocus
           style={{
             position: 'absolute', left: editing.x, top: editing.y, zIndex: 3,
-            width: 240, height: 60, font: '13px system-ui', padding: 6,
+            width: 240, minHeight: 46, font: '13px system-ui', padding: 6,
             border: `2px solid ${color}`, borderRadius: 6, resize: 'none',
           }}
           onBlur={(e) => {
-            useStore.getState().setAnnotationText(editing.id, e.target.value);
+            const text = e.target.value;
+            const s = useStore.getState();
+            // An empty label is just a stray click — drop it rather than leaving a dot behind.
+            if (text.trim()) s.setAnnotationText(editing.id, text);
+            else s.removeAnnotation(editing.id);
             setEditing(null);
+            snapBackToBrowse();
+          }}
+          onInput={(e) => {
+            // Keep the live bubble in step with what is being typed, so its box grows as the
+            // user writes rather than jumping to its final size on blur.
+            useStore.getState().setAnnotationText(editing.id, (e.target as HTMLTextAreaElement).value);
           }}
           onKeyDown={(e) => {
             if (e.key === 'Escape' || (e.key === 'Enter' && (e.metaKey || e.ctrlKey))) {

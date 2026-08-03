@@ -12,6 +12,7 @@ import { MatrixView } from './panels/MatrixView.js';
 
 function App(): JSX.Element {
   const status = useStore((s) => s.status);
+  const toolsOpen = useStore((s) => s.toolsOpen);
 
   useEffect(() => {
     const onMessage = (ev: MessageEvent<unknown>): void => {
@@ -53,13 +54,18 @@ function App(): JSX.Element {
         if (e.key.toLowerCase() === 'z') { useStore.getState().undoAnnotation(); e.preventDefault(); }
         return;
       }
-      const map: Record<string, 'rect' | 'ellipse' | 'arrow' | 'text' | 'callout'> = {
-        b: 'rect', c: 'ellipse', a: 'arrow', t: 'text', o: 'callout',
-      };
       const s = useStore.getState();
       if (e.key === 'Escape') { s.setMode('browse'); post({ type: 'set-mode', mode: 'browse' }); return; }
+      // `s` cycles the shape button, matching its click behaviour.
+      const map: Record<string, 'rect' | 'ellipse' | 'arrow' | 'text' | 'callout'> = {
+        s: s.mode === 'annotate' && s.tool === s.shape
+          ? (s.shape === 'rect' ? 'ellipse' : 'rect')
+          : s.shape,
+        a: 'arrow', t: 'text', o: 'callout',
+      };
       const kind = map[e.key.toLowerCase()];
       if (!kind) return;
+      if (kind === 'rect' || kind === 'ellipse') s.setShape(kind);
       s.setTool(kind);
       if (s.mode !== 'annotate') { s.setMode('annotate'); post({ type: 'set-mode', mode: 'annotate' }); }
       post({ type: 'set-tool', tool: kind });
@@ -81,7 +87,7 @@ function App(): JSX.Element {
     }}>
       <NavBar />
       <Toolbar />
-      <DeviceBar />
+      {toolsOpen && <DeviceBar />}
       {status && (
         <div
           data-testid="status"
@@ -98,7 +104,7 @@ function App(): JSX.Element {
       <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
         <BrowserView />
         <MatrixView />
-        <Inspector />
+        {toolsOpen && <Inspector />}
       </div>
     </div>
   );

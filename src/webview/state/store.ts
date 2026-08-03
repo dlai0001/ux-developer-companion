@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { Mode } from '../../shared/protocol.js';
 import type { ComponentInfo } from '../../shared/agent-api.js';
 import type { ComponentTreeNode } from '../../shared/agent-api.js';
-import type { Annotation, AnnotationKind } from '../../shared/annotations.js';
+import { DEFAULT_COLOR, type Annotation, type AnnotationKind, type ShapeKind } from '../../shared/annotations.js';
 
 export interface AppState {
   ready: boolean;
@@ -24,8 +24,15 @@ export interface AppState {
   setAnnotationComponent(id: string, component: ComponentInfo | null): void;
   clearAnnotations(): void;
   undoAnnotation(): void;
+  removeAnnotation(id: string): void;
   setTool(tool: AnnotationKind): void;
   setColor(color: string): void;
+  /** Which shape the single Shape button currently draws. */
+  shape: ShapeKind;
+  setShape(s: ShapeKind): void;
+  /** Inspector + responsive + testing panels are hidden until asked for. */
+  toolsOpen: boolean;
+  setToolsOpen(v: boolean): void;
   setStatus(text: string, tone: 'info' | 'warn' | 'error'): void;
   setUrl(url: string): void;
   setMode(mode: Mode): void;
@@ -61,7 +68,9 @@ export const useStore = create<AppState>((set) => ({
   selected: null,
   annotations: [],
   tool: 'rect',
-  color: '#ff3ea5',
+  shape: 'rect',
+  toolsOpen: false,
+  color: DEFAULT_COLOR,
   setReady: (extensionVersion) => set({ ready: true, extensionVersion }),
   addAnnotation: (a) => set((s) => ({ annotations: [...s.annotations, a] })),
   setAnnotationText: (id, text) => set((s) => ({
@@ -72,8 +81,11 @@ export const useStore = create<AppState>((set) => ({
   })),
   clearAnnotations: () => set({ annotations: [] }),
   undoAnnotation: () => set((s) => ({ annotations: s.annotations.slice(0, -1) })),
+  removeAnnotation: (id) => set((s) => ({ annotations: s.annotations.filter((a) => a.id !== id) })),
   setTool: (tool) => set({ tool }),
   setColor: (color) => set({ color }),
+  setShape: (shape) => set({ shape }),
+  setToolsOpen: (toolsOpen) => set({ toolsOpen }),
   setStatus: (text, tone) => set({ status: { text, tone } }),
   setUrl: (url) => set({ url }),
   setMode: (mode) => set({ mode }),

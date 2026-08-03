@@ -2,7 +2,7 @@
   "name": "ux-developer-companion",
   "displayName": "UX Developer Companion",
   "description": "Embedded browser, component inspector, and annotated screenshots \u2014 works with GitHub Copilot Chat.",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "dlaisoft",
   "license": "MIT",
   "engines": {

@@ -21,7 +21,8 @@ export interface Annotation {
   componentRef?: ComponentInfo | null;
 }
 
-export const ANNOTATION_COLORS = ['#ff3ea5', '#2f81f7', '#f5a524', '#17c964'] as const;
+/** Solid red by default; any other colour comes from the swatch's colour picker. */
+export const DEFAULT_COLOR = '#ff0000';
 
 export function newId(seed: number): string {
   return `a${seed.toString(36)}`;
@@ -46,13 +47,21 @@ export function anchorPoint(a: Annotation): Point {
   return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) };
 }
 
-/** Kinds placed by a click rather than a drag — they take their size from their text. */
+/**
+ * Kinds placed by a single click. A callout is NOT one of these: it is dragged — the initial
+ * press sets the tail's target and the drag places the bubble away from it.
+ */
 export function isClickPlaced(kind: AnnotationKind): boolean {
-  return kind === 'callout' || kind === 'text';
+  return kind === 'text';
 }
 
+/** Shapes offered behind the single Shape button. */
+export const SHAPE_KINDS = ['rect', 'ellipse'] as const;
+export type ShapeKind = (typeof SHAPE_KINDS)[number];
+
 export function isDegenerate(a: Annotation): boolean {
-  if (isClickPlaced(a.kind)) return false;
+  // A callout with no drag is still valid — it just sits on its anchor.
+  if (isClickPlaced(a.kind) || a.kind === 'callout') return false;
   const r = normalizeRect(a.from, a.to);
   return r.width < 3 && r.height < 3;
 }
