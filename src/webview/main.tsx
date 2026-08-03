@@ -1,18 +1,13 @@
 import { createRoot } from 'react-dom/client';
 import { useEffect } from 'react';
-import { isHostToWebview, type WebviewToHost } from '../shared/protocol.js';
+import { isHostToWebview } from '../shared/protocol.js';
 import { useStore } from './state/store.js';
-
-interface VsCodeApi {
-  postMessage(msg: unknown): void;
-}
-declare function acquireVsCodeApi(): VsCodeApi;
-
-const vscodeApi = acquireVsCodeApi();
-export const post = (msg: WebviewToHost): void => vscodeApi.postMessage(msg);
+import { post } from './post.js';
+import { BrowserView } from './browser-view/BrowserView.js';
+import { NavBar } from './browser-view/NavBar.js';
 
 function App(): JSX.Element {
-  const { ready, extensionVersion, status, frame, mode } = useStore();
+  const status = useStore((s) => s.status);
 
   useEffect(() => {
     const onMessage = (ev: MessageEvent<unknown>): void => {
@@ -25,7 +20,8 @@ function App(): JSX.Element {
         case 'url-changed': s.setUrl(m.url); break;
         case 'mode-changed': s.setMode(m.mode); break;
         case 'frame': s.setFrame(`data:image/jpeg;base64,${m.data}`); break;
-        case 'component-resolved': break; // inspector panel arrives in M5
+        case 'viewport-changed': s.setViewport({ width: m.width, height: m.height }); break;
+        case 'component-resolved': s.setSelected(m.component); break;
       }
     };
     window.addEventListener('message', onMessage);
@@ -34,28 +30,25 @@ function App(): JSX.Element {
   }, []);
 
   return (
-    <div style={{ font: '13px var(--vscode-font-family, system-ui)', padding: 12 }}>
-      <h2 style={{ margin: '0 0 8px' }}>UX Developer Companion</h2>
-      <p style={{ margin: '0 0 12px', opacity: 0.8 }}>
-        {ready ? `Connected to extension v${extensionVersion}` : 'Connecting…'}
-        {' · '}mode: {mode}
-      </p>
+    <div style={{
+      font: '13px var(--vscode-font-family, system-ui)', height: '100vh',
+      display: 'flex', flexDirection: 'column', color: 'var(--vscode-foreground, #ccc)',
+    }}>
+      <NavBar />
       {status && (
-        <p
+        <div
           data-testid="status"
           style={{
-            margin: '0 0 12px',
-            color:
-              status.tone === 'error' ? 'var(--vscode-errorForeground)'
-              : status.tone === 'warn' ? 'var(--vscode-editorWarning-foreground)'
-              : 'inherit',
+            padding: '2px 8px', fontSize: 12,
+            color: status.tone === 'error' ? 'var(--vscode-errorForeground, #f48771)'
+              : status.tone === 'warn' ? 'var(--vscode-editorWarning-foreground, #cca700)'
+              : 'var(--vscode-descriptionForeground, #999)',
           }}
         >
           {status.text}
-        </p>
+        </div>
       )}
-      {/* The browser viewport lands in M1; the canvas is deliberately absent until then. */}
-      {frame && <img src={frame} alt="" style={{ maxWidth: '100%', display: 'block' }} />}
+      <BrowserView />
     </div>
   );
 }

@@ -23,6 +23,8 @@ export type HostToWebview =
   | { type: 'status'; text: string; tone: 'info' | 'warn' | 'error' }
   | { type: 'url-changed'; url: string }
   | { type: 'mode-changed'; mode: Mode }
+  /** Page CSS size pinned via setDeviceMetricsOverride — the webview needs it to map coordinates. */
+  | { type: 'viewport-changed'; width: number; height: number }
   | { type: 'component-resolved'; component: ComponentInfo | null };
 
 export type MouseKind = 'down' | 'up' | 'move' | 'wheel';
@@ -37,6 +39,9 @@ export interface InputModifiers {
 export type WebviewToHost =
   | { type: 'webview-ready' }
   | { type: 'navigate'; url: string }
+  | { type: 'go-back' }
+  | { type: 'go-forward' }
+  | { type: 'reload' }
   | { type: 'set-mode'; mode: Mode }
   | { type: 'key'; key: string; code: string; modifiers: InputModifiers }
   | ({ type: 'mouse'; kind: MouseKind; x: number; y: number; deltaX?: number; deltaY?: number;

@@ -72,6 +72,22 @@ export interface LaunchOptions {
 }
 
 export async function launchBrowser(opts: LaunchOptions): Promise<LaunchedBrowser> {
+  try {
+    return await attemptLaunch(opts);
+  } catch (first) {
+    // Reaping the lock is not always enough: after an unclean kill, surviving Chrome child
+    // processes can still own the profile, and the new instance exits or never opens a port.
+    // A throwaway profile always works, so the crash-restart path never dead-ends.
+    const fallbackDir = `${opts.userDataDir}-retry-${Date.now()}`;
+    try {
+      return await attemptLaunch({ ...opts, userDataDir: fallbackDir });
+    } catch {
+      throw first; // report the original, more informative failure
+    }
+  }
+}
+
+async function attemptLaunch(opts: LaunchOptions): Promise<LaunchedBrowser> {
   const { userDataDir, headless = true, extraArgs = [], timeoutMs = 20000 } = opts;
   const browserPath = await discoverBrowser(opts.browserPath);
 

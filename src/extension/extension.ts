@@ -6,7 +6,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   context.subscriptions.push(
     vscode.commands.registerCommand('uxCompanion.open', () => {
-      BrowserPanel.show(context.extensionUri, version);
+      BrowserPanel.show(context.extensionUri, version, context.globalStorageUri);
     }),
   );
 }
