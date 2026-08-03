@@ -88,7 +88,9 @@ export async function launchBrowser(opts: LaunchOptions): Promise<LaunchedBrowse
 }
 
 async function attemptLaunch(opts: LaunchOptions): Promise<LaunchedBrowser> {
-  const { userDataDir, headless = true, extraArgs = [], timeoutMs = 20000 } = opts;
+  // 45s, not 20s: a loaded machine (or one with on-access AV scanning) can take well over 20s
+  // to get Chrome listening, and a premature timeout looks identical to a launch failure.
+  const { userDataDir, headless = true, extraArgs = [], timeoutMs = 45000 } = opts;
   const browserPath = await discoverBrowser(opts.browserPath);
 
   mkdirSync(userDataDir, { recursive: true });

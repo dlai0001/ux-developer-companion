@@ -59,7 +59,8 @@
     "package": "vsce package --out ux-developer-companion.vsix"
   },
   "dependencies": {
-    "chrome-remote-interface": "^0.34.0"
+    "chrome-remote-interface": "^0.34.0",
+    "react-devtools-core": "^6.1.5"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

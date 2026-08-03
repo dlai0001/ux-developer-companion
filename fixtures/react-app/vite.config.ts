@@ -15,9 +15,14 @@ function itemsApi(): Plugin {
   };
 }
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react(), itemsApi()],
   server: { port: 5173, strictPort: true },
   preview: { port: 5174, strictPort: true },
   build: { outDir: 'dist' },
-});
+  // `vite build --mode development` alone does NOT set process.env.NODE_ENV, so React still
+  // ships its PRODUCTION runtime — the devtools hook then reports canEditFunctionProps=false
+  // and the adapter (correctly) calls the page a production build. Define it explicitly so
+  // dist-dev behaves like a real dev server.
+  define: { 'process.env.NODE_ENV': JSON.stringify(mode === 'development' ? 'development' : 'production') },
+}));

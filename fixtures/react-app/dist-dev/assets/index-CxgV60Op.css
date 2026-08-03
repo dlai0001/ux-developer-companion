@@ -1,0 +1,40 @@
+:root {
+  --color-primary: #2f81f7;
+  --brand: var(--color-primary);
+  --card-pad: 24px;
+}
+
+body { margin: 0; font: 15px/1.5 system-ui, sans-serif; color: #16202c; }
+main { padding: 20px; }
+nav a { margin-right: 12px; color: var(--brand); }
+
+.card {
+  padding: var(--card-pad);
+  border: 2px solid var(--color-primary);
+  border-radius: 8px;
+  max-width: 420px;
+}
+.card.compact { --card-pad: 8px; }
+
+/* Themed via a custom property so the M7 eyedropper has a token to resolve. */
+.primary-btn {
+  background: var(--color-primary);
+  color: #fff;
+  border: 0;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font: inherit;
+  cursor: pointer;
+}
+.primary-btn:hover { background: #1c6fe0; }
+.primary-btn:focus-visible { outline: 3px solid #ff3ea5; outline-offset: 2px; }
+
+/* INTENTIONAL axe violation #1: colour-contrast well under 4.5:1. */
+.low-contrast { color: #b9c6d4; background: #ffffff; }
+
+/* Layout shifts at the two breakpoints the M6 slider must discover. */
+.grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 600px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 900px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+
+.banner-error { color: #b00020; font-weight: 600; }
