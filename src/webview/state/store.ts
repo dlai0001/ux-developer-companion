@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Mode } from '../../shared/protocol.js';
 import type { ComponentInfo } from '../../shared/agent-api.js';
+import type { ComponentTreeNode } from '../../shared/agent-api.js';
 import type { Annotation, AnnotationKind } from '../../shared/annotations.js';
 
 export interface AppState {
@@ -30,6 +31,14 @@ export interface AppState {
   setFrame(dataUri: string): void;
   setViewport(v: { width: number; height: number }): void;
   setSelected(c: ComponentInfo | null): void;
+  tree: ComponentTreeNode[];
+  pickMode: boolean;
+  supportsWrite: boolean;
+  writeNote: string | null;
+  setTree(nodes: ComponentTreeNode[]): void;
+  setPickMode(on: boolean): void;
+  setSupportsWrite(v: boolean): void;
+  setWriteNote(note: string | null): void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -61,4 +70,12 @@ export const useStore = create<AppState>((set) => ({
   setFrame: (frame) => set({ frame }),
   setViewport: (viewport) => set({ viewport }),
   setSelected: (selected) => set({ selected }),
+  tree: [],
+  pickMode: false,
+  supportsWrite: false,
+  writeNote: null,
+  setTree: (tree) => set({ tree }),
+  setPickMode: (pickMode) => set({ pickMode }),
+  setSupportsWrite: (supportsWrite) => set({ supportsWrite }),
+  setWriteNote: (writeNote) => set({ writeNote }),
 }));

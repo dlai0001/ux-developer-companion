@@ -47,6 +47,7 @@ function rendererInterface(): { rid: number; ri: RendererInterface } | null {
 
 export class ReactAdapter implements FrameworkAdapter {
   private lastEditable = false;
+  private probed = false;
 
   detect(): boolean {
     const h = hook();
@@ -55,7 +56,26 @@ export class ReactAdapter implements FrameworkAdapter {
 
   get supportsWrite(): boolean {
     // Derived, never hardcoded: false on production builds (spike S3).
+    // The flag reflects the last inspectElement, so probe once if nothing has been inspected
+    // yet — otherwise the inspector renders read-only until the user happens to pick something.
+    if (!this.probed && !this.lastEditable) this.probeEditable();
     return this.lastEditable;
+  }
+
+  /** Inspect the first component we can find purely to learn whether edits are possible. */
+  private probeEditable(): void {
+    this.probed = true;
+    const r = rendererInterface();
+    if (!r?.ri.getElementIDForHostInstance) return;
+    for (const el of Array.from(document.querySelectorAll('*')).slice(0, 200)) {
+      const id = r.ri.getElementIDForHostInstance(el);
+      if (id == null) continue;
+      const data = r.ri.inspectElement?.(null, id, null, false)?.value;
+      if (data) {
+        this.lastEditable = !!(data.canEditFunctionProps || data.canEditHooks);
+        if (this.lastEditable) return;
+      }
+    }
   }
 
   resolveAt(x: number, y: number): ComponentInfo | null {
@@ -103,6 +123,7 @@ export class ReactAdapter implements FrameworkAdapter {
       : null;
 
     return {
+      id,
       framework: 'react',
       name: displayName ?? 'Unknown',
       selectorHint: displayName,

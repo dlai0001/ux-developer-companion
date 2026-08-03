@@ -20,6 +20,7 @@ export class BrowserPanel {
   private resizeTimer: NodeJS.Timeout | undefined;
   private readonly locator = new SourceLocator();
   private lastViewport = { width: 1280, height: 800 };
+  private pickMode = false;
 
   private constructor(
     private readonly panel: vscode.WebviewPanel,
@@ -88,6 +89,14 @@ export class BrowserPanel {
         await this.session?.sendKey(msg.key, msg.code, msg.modifiers);
         break;
       case 'mouse': {
+        // Pick mode consumes the click instead of forwarding it to the page.
+        if (this.pickMode && msg.kind === 'down') {
+          const component = (await this.session?.resolveAt(msg.x, msg.y)) ?? null;
+          this.post({ type: 'component-resolved', component });
+          this.post({ type: 'supports-write', supported: (await this.session?.supportsWrite()) ?? false });
+          this.pickMode = false;
+          break;
+        }
         const delta = msg.deltaX !== undefined || msg.deltaY !== undefined
           ? { deltaX: msg.deltaX ?? 0, deltaY: msg.deltaY ?? 0 }
           : undefined;
@@ -115,6 +124,32 @@ export class BrowserPanel {
       case 'set-tool':
       case 'set-color':
         break;   // purely webview-side state
+      case 'set-pick-mode':
+        this.pickMode = msg.enabled;
+        break;
+      case 'request-tree': {
+        const nodes = (await this.session?.componentTree(msg.maxDepth)) ?? [];
+        this.post({ type: 'component-tree', nodes });
+        break;
+      }
+      case 'select-component': {
+        const component = (await this.session?.readComponent(msg.id)) ?? null;
+        this.post({ type: 'component-resolved', component });
+        this.post({ type: 'supports-write', supported: (await this.session?.supportsWrite()) ?? false });
+        break;
+      }
+      case 'write-state': {
+        const res = await this.session?.writeComponent(msg.id, msg.path, msg.value);
+        this.post({
+          type: 'write-result',
+          ok: res?.ok ?? false,
+          ...(res && !res.ok ? { reason: res.reason, ...(res.detail ? { detail: res.detail } : {}) } : {}),
+        });
+        // Re-read so the panel shows what the page actually holds after the write.
+        const component = (await this.session?.readComponent(msg.id)) ?? null;
+        if (component) this.post({ type: 'component-resolved', component });
+        break;
+      }
       case 'send-to-prompt':
         await this.sendToPrompt(msg.annotations);
         break;

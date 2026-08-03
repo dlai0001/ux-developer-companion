@@ -14,6 +14,8 @@ export interface Bounds {
 }
 
 export interface ComponentInfo {
+  /** Adapter-assigned handle used to address this component in readState/writeState. */
+  id: number;
   framework: Framework | null;
   name: string;
   selectorHint: string | null;

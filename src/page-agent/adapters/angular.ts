@@ -109,6 +109,7 @@ export class AngularAdapter implements FrameworkAdapter {
     const selector = meta?.selector ?? (tag.includes('-') ? tag : null);
     const className = (inst.constructor?.name ?? 'Unknown').replace(/^_+/, '');
     return {
+      id,
       framework: 'angular',
       name: selector ?? className,
       selectorHint: selector,

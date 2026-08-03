@@ -5,6 +5,7 @@ import { useStore } from './state/store.js';
 import { post } from './post.js';
 import { BrowserView } from './browser-view/BrowserView.js';
 import { NavBar } from './browser-view/NavBar.js';
+import { Inspector } from './panels/Inspector.js';
 
 function App(): JSX.Element {
   const status = useStore((s) => s.status);
@@ -29,6 +30,11 @@ function App(): JSX.Element {
           break;
         case 'request-copy-to-clipboard':
           post({ type: 'copy-to-clipboard', annotations: useStore.getState().annotations });
+          break;
+        case 'component-tree': s.setTree(m.nodes); break;
+        case 'supports-write': s.setSupportsWrite(m.supported); break;
+        case 'write-result':
+          s.setWriteNote(m.ok ? null : `Write failed: ${m.reason ?? 'unknown'}${m.detail ? ` (${m.detail})` : ''}`);
           break;
       }
     };
@@ -56,7 +62,10 @@ function App(): JSX.Element {
           {status.text}
         </div>
       )}
-      <BrowserView />
+      <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+        <BrowserView />
+        <Inspector />
+      </div>
     </div>
   );
 }

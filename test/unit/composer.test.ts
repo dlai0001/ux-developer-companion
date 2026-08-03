@@ -5,7 +5,7 @@ import type { ComponentInfo } from '../../src/shared/agent-api.js';
 import type { LocateResult } from '../../src/extension/locator-rank.js';
 
 const component = (over: Partial<ComponentInfo> = {}): ComponentInfo => ({
-  framework: 'react', name: 'UserCard', selectorHint: 'UserCard', ancestry: ['App', 'UserCard'],
+  id: 1, framework: 'react', name: 'UserCard', selectorHint: 'UserCard', ancestry: ['App', 'UserCard'],
   props: { compact: true, user: { name: 'Ada Lovelace' } }, state: { 'State[0]': 3 },
   domPath: '#usercard', bounds: { x: 0, y: 0, width: 100, height: 50 }, ...over,
 });

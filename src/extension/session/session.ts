@@ -139,6 +139,10 @@ export class BrowserSession {
     ).then((v) => v ?? { ok: false as const, reason: 'unsupported' as const });
   }
 
+  supportsWrite(): Promise<boolean> {
+    return this.agent<boolean>('a.supportsWrite()').then((v) => v ?? false);
+  }
+
   detectFramework(): Promise<string | null> {
     return this.agent<string | null>('a.detectFramework()');
   }

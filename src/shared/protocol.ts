@@ -2,7 +2,7 @@
 // M0 defines the envelope and the handful of messages the skeleton needs; later milestones extend
 // the unions rather than inventing parallel channels.
 
-import type { ComponentInfo } from './agent-api.js';
+import type { ComponentInfo, ComponentTreeNode, Json } from './agent-api.js';
 import type { Annotation, AnnotationKind } from './annotations.js';
 
 /** Screencast frame pushed host -> webview. */
@@ -32,7 +32,10 @@ export type HostToWebview =
   | { type: 'capture-complete'; dir: string; cleanPath: string; annotatedPath: string }
   /** Command-triggered: the webview owns the annotation list, so it replies with the action. */
   | { type: 'request-send-to-prompt' }
-  | { type: 'request-copy-to-clipboard' };
+  | { type: 'request-copy-to-clipboard' }
+  | { type: 'component-tree'; nodes: ComponentTreeNode[] }
+  | { type: 'write-result'; ok: boolean; reason?: string; detail?: string }
+  | { type: 'supports-write'; supported: boolean };
 
 export type MouseKind = 'down' | 'up' | 'move' | 'wheel';
 
@@ -60,7 +63,12 @@ export type WebviewToHost =
   | { type: 'set-color'; color: string }
   | { type: 'capture'; annotations: Annotation[] }
   | { type: 'send-to-prompt'; annotations: Annotation[] }
-  | { type: 'copy-to-clipboard'; annotations: Annotation[] };
+  | { type: 'copy-to-clipboard'; annotations: Annotation[] }
+  | { type: 'request-tree'; maxDepth: number }
+  | { type: 'select-component'; id: number }
+  | { type: 'write-state'; id: number; path: Array<string | number>; value: Json }
+  /** Crosshair pick mode: next click in the page resolves instead of being forwarded. */
+  | { type: 'set-pick-mode'; enabled: boolean };
 
 /** Narrowing helper shared by both sides so neither hand-rolls `as` casts. */
 export function isHostToWebview(m: unknown): m is HostToWebview {
