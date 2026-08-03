@@ -55,7 +55,15 @@ function App(): JSX.Element {
         return;
       }
       const s = useStore.getState();
-      if (e.key === 'Escape') { s.setMode('browse'); post({ type: 'set-mode', mode: 'browse' }); return; }
+      // Escape disarms rather than resuming Browse — bailing out of a tool should never hand the
+      // next click back to the page.
+      if (e.key === 'Escape') {
+        s.setTool(null);
+        s.setMode('idle');
+        post({ type: 'set-tool', tool: null });
+        post({ type: 'set-mode', mode: 'idle' });
+        return;
+      }
       // `s` cycles the shape button, matching its click behaviour.
       const map: Record<string, 'rect' | 'ellipse' | 'arrow' | 'text' | 'callout'> = {
         s: s.mode === 'annotate' && s.tool === s.shape

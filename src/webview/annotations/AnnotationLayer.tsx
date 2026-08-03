@@ -18,6 +18,7 @@ interface Props {
  */
 export function AnnotationLayer({ viewport }: Props): JSX.Element | null {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const editorRef = useRef<HTMLTextAreaElement>(null);
   const mode = useStore((s) => s.mode);
   const tool = useStore((s) => s.tool);
   const color = useStore((s) => s.color);
@@ -52,7 +53,7 @@ export function AnnotationLayer({ viewport }: Props): JSX.Element | null {
     drawAnnotations(ctx, draft ? [...annotations, draft] : annotations, { scale });
   }, [annotations, draft, viewport, mode]);
 
-  if (mode !== 'annotate') return null;
+  if (mode !== 'annotate' || !tool) return null;
 
   const commit = (a: Annotation): void => {
     if (isDegenerate(a)) { setDraft(null); return; }
@@ -66,18 +67,21 @@ export function AnnotationLayer({ viewport }: Props): JSX.Element | null {
       const r = c?.getBoundingClientRect();
       const scale = r && viewport ? r.width / viewport.width : 1;
       setEditing({ id: a.id, x: a.from.x * scale, y: a.from.y * scale });
-      return;   // snap back to browse only once the text is committed
+      return;   // disarm only once the text is committed
     }
-    snapBackToBrowse();
+    disarm();
   };
 
   /**
-   * After a mark is finished, return to Browse so the next click interacts with the page.
-   * Otherwise every stray click keeps drawing and the page feels frozen.
+   * A finished mark drops the tool and lands in `idle` rather than Browse: the next stray click
+   * neither draws a second mark nor navigates the page. Browse is a deliberate click away.
    */
-  const snapBackToBrowse = (): void => {
-    useStore.getState().setMode('browse');
-    post({ type: 'set-mode', mode: 'browse' });
+  const disarm = (): void => {
+    const s = useStore.getState();
+    s.setTool(null);
+    s.setMode('idle');
+    post({ type: 'set-tool', tool: null });
+    post({ type: 'set-mode', mode: 'idle' });
   };
 
   return (
@@ -91,6 +95,9 @@ export function AnnotationLayer({ viewport }: Props): JSX.Element | null {
         }}
         onMouseDown={(e) => {
           e.preventDefault();
+          // Clicking away from an open label commits it and nothing else. preventDefault here
+          // means the textarea would otherwise keep focus and the click would start a new mark.
+          if (editing) { editorRef.current?.blur(); return; }
           const p = toPage(e);
           const kind: AnnotationKind = tool;
           const fresh: Annotation = {
@@ -114,6 +121,7 @@ export function AnnotationLayer({ viewport }: Props): JSX.Element | null {
       />
       {editing && (
         <textarea
+          ref={editorRef}
           data-testid="callout-input"
           autoFocus
           style={{
@@ -128,7 +136,7 @@ export function AnnotationLayer({ viewport }: Props): JSX.Element | null {
             if (text.trim()) s.setAnnotationText(editing.id, text);
             else s.removeAnnotation(editing.id);
             setEditing(null);
-            snapBackToBrowse();
+            disarm();
           }}
           onInput={(e) => {
             // Keep the live bubble in step with what is being typed, so its box grows as the

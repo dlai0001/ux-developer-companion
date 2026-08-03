@@ -2,6 +2,21 @@
 
 All notable changes to UX Developer Companion.
 
+## [Unreleased]
+
+### Changed
+- **Finishing a mark now disarms the tool and switches Browse off**, leaving the panel in a
+  neutral state where a click does nothing at all. Previously it snapped straight back to
+  Browse, so a stray click could navigate the app you were annotating. A small caption —
+  "Click Browse to toggle browsing mode" — says how to get moving again.
+- **Browse is a toggle.** Click it to hand clicks back to the page, click it again to park.
+  Picking any annotation tool switches Browse off. `Esc` now disarms rather than resuming
+  Browse.
+- **Send to Chat no longer includes the "Annotated components" section.** The per-annotation
+  component, props, state and ranked source files were the bulk of the prompt and mostly
+  restated what the annotated image already shows. Only text written on callouts and labels
+  carries through, under "Notes on the annotated screenshot".
+
 ## [0.0.3] — 2026-08-03
 
 ### Changed

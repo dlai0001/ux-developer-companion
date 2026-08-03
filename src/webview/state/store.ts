@@ -16,7 +16,8 @@ export interface AppState {
   viewport: { width: number; height: number } | null;
   selected: ComponentInfo | null;
   annotations: Annotation[];
-  tool: AnnotationKind;
+  /** `null` while no tool is armed — the state the toolbar returns to after a mark lands. */
+  tool: AnnotationKind | null;
   color: string;
   setReady(version: string): void;
   addAnnotation(a: Annotation): void;
@@ -25,7 +26,7 @@ export interface AppState {
   clearAnnotations(): void;
   undoAnnotation(): void;
   removeAnnotation(id: string): void;
-  setTool(tool: AnnotationKind): void;
+  setTool(tool: AnnotationKind | null): void;
   setColor(color: string): void;
   /** Which shape the single Shape button currently draws. */
   shape: ShapeKind;
@@ -67,7 +68,7 @@ export const useStore = create<AppState>((set) => ({
   viewport: null,
   selected: null,
   annotations: [],
-  tool: 'rect',
+  tool: null,
   shape: 'rect',
   toolsOpen: false,
   color: DEFAULT_COLOR,

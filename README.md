@@ -16,7 +16,7 @@ Copilot Chat** with one keystroke.
 |---|---|
 | **Embedded browser** | Headless Edge/Chrome streamed into a panel via CDP, with full mouse/keyboard/wheel forwarding and a navigation bar. |
 | **Annotations** | Rectangle, arrow, and Sketch-style callouts. Each mark resolves the component underneath it at creation time. |
-| **Send to Prompt** | `cmd/ctrl+alt+p` attaches a clean screenshot, an annotated screenshot, and a context block (URL, route, viewport, emulation state, components, source paths) to Copilot Chat in agent mode. |
+| **Send to Chat** | `cmd/ctrl+alt+p` attaches a clean screenshot, an annotated screenshot, and a short context block (URL, route, viewport, emulation state, and any text you wrote on the marks) to Copilot Chat in agent mode. |
 | **Inspector** | Component tree, click-to-pick, and live prop/state editing for React and Angular. |
 | **Responsive** | Device presets with DPR/touch/UA, a breakpoint slider built from your app's own media queries, and a responsive matrix. |
 | **Colour & a11y** | Eyedropper that names the CSS custom property *and where it is defined*, WCAG contrast checking, vision-deficiency and media emulation, and an axe-core scan. |
@@ -33,7 +33,9 @@ Copilot Chat** with one keystroke.
 
 1. Run **UX Companion: Open Browser Panel** from the Command Palette.
 2. Enter your dev server URL in the address bar.
-3. Switch to **Annotate**, mark something up, then press **Send to Prompt**.
+3. Click **Browse** to drive the app; pick a markup tool to mark something up, then press
+   **Send to Chat**. Each finished mark drops the tool and switches Browse off, so a stray
+   click can neither draw again nor navigate — click **Browse** when you want to move around.
 
 ## Settings
 

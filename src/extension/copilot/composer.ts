@@ -1,7 +1,6 @@
-// Builds the context text sent alongside the screenshots (PLAN §4.5).
-import type { ComponentInfo } from '../../shared/agent-api.js';
+// Builds the context text sent alongside the screenshots (PLAN §4.5). Deliberately short: the
+// images carry the detail, and every extra line here competes with the user's own request.
 import type { Annotation } from '../../shared/annotations.js';
-import type { LocateResult } from '../locator-rank.js';
 
 export interface EmulationState {
   viewport: { width: number; height: number; dpr: number };
@@ -19,24 +18,10 @@ export interface ComposeInput {
   timestamp: string;
   emulation: EmulationState;
   annotations: Annotation[];
-  /** Resolved source files, keyed by annotation id. */
-  sources: Map<string, LocateResult>;
   captureDir: string;
 }
 
 const truncate = (s: string, n = 240): string => (s.length > n ? `${s.slice(0, n)}…` : s);
-
-function describeComponent(c: ComponentInfo | null | undefined): string {
-  if (!c) return 'no component resolved';
-  const bits = [c.name];
-  if (c.degraded === 'production-build') bits.push('(production build — name unreliable)');
-  return bits.join(' ');
-}
-
-function snapshotLine(label: string, snap: Record<string, unknown> | null): string | null {
-  if (!snap || Object.keys(snap).length === 0) return null;
-  return `    ${label}: ${truncate(JSON.stringify(snap))}`;
-}
 
 export function composeContext(input: ComposeInput): string {
   const { emulation: e } = input;
@@ -55,26 +40,15 @@ export function composeContext(input: ComposeInput): string {
   if (e.interceptRules) state.push(`intercept rules: ${e.interceptRules} active`);
   lines.push(state.join(' | '));
 
-  if (input.annotations.length) {
-    lines.push('Annotated components:');
-    input.annotations.forEach((a, i) => {
-      const c = a.componentRef ?? null;
-      const loc = input.sources.get(a.id);
-      const label = a.kind === 'callout' && a.text ? `${a.kind} "${truncate(a.text, 80)}"` : a.kind;
-      const file = loc?.best ? ` — ${loc.best.path}` : '';
-      lines.push(`[${i + 1}] ${label} → ${describeComponent(c)}${file}`);
-      // Alternates matter: ranked top-1 is ~87-95% accurate, so surfacing the runners-up
-      // costs one line and covers most of the remaining error (FINDINGS S8).
-      if (loc?.alternates.length) {
-        lines.push(`    alternates: ${loc.alternates.map((x) => x.path).join(', ')}`);
-      }
-      const props = snapshotLine(c?.framework === 'angular' ? 'inputs' : 'props', c?.props ?? null);
-      if (props) lines.push(props);
-      const st = snapshotLine('state', c?.state ?? null);
-      if (st) lines.push(st);
-    });
-  } else {
-    lines.push('Annotated components: (none — full-viewport capture)');
+  // The per-annotation component/props/source dump used to live here. It was the bulk of the
+  // prompt and mostly restated what the annotated image already shows, so the marks now speak for
+  // themselves and only the notes written on them carry through as text.
+  const notes = input.annotations
+    .map((a) => a.text?.trim())
+    .filter((t): t is string => Boolean(t));
+  if (notes.length) {
+    lines.push('Notes on the annotated screenshot:');
+    notes.forEach((t, i) => lines.push(`[${i + 1}] ${truncate(t, 200)}`));
   }
 
   lines.push('Images: (1) clean screenshot, (2) annotated screenshot — attached above');

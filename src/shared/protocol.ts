@@ -16,7 +16,11 @@ export interface FrameMessage {
   capturedAt: number | null;
 }
 
-export type Mode = 'browse' | 'annotate';
+/**
+ * `idle` is a deliberate limbo: no tool is armed and input is not forwarded to the page, so a
+ * stray click after finishing a mark neither draws nor navigates. Browse is opt-in from there.
+ */
+export type Mode = 'browse' | 'annotate' | 'idle';
 
 export type HostToWebview =
   | FrameMessage
@@ -66,7 +70,8 @@ export type WebviewToHost =
   | { type: 'resize'; width: number; height: number }
   | { type: 'resolve-at'; x: number; y: number }
   | { type: 'resolve-annotation'; id: string; x: number; y: number }
-  | { type: 'set-tool'; tool: AnnotationKind }
+  /** `null` disarms the current tool — nothing is drawn until one is picked again. */
+  | { type: 'set-tool'; tool: AnnotationKind | null }
   | { type: 'set-color'; color: string }
   | { type: 'capture'; annotations: Annotation[] }
   | { type: 'send-to-prompt'; annotations: Annotation[] }

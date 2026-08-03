@@ -74,6 +74,9 @@ change the render. ☐ `prefers-color-scheme: dark` restyles an app that support
 ☐ Draw each kind (rect / arrow / callout) and confirm the mark lands where the cursor was.
 ☐ Callout text wraps and commits on blur. ☐ Annotations stay anchored after scrolling and after
 a device-preset change — geometry is stored in page CSS px specifically for this.
+☐ After each mark lands, no tool is highlighted, Browse is off, the caption "Click Browse to
+toggle browsing mode" is showing, and clicking the page does nothing — no new mark, no
+navigation. ☐ Clicking Browse restores page interaction; clicking it again parks the panel.
 
 ## 9. Corporate environment 🏢 ☐
 

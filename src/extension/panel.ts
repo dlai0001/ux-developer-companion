@@ -8,10 +8,8 @@ import { capture } from './session/capture.js';
 import { composeContext, routeOf } from './copilot/composer.js';
 import { sendToPrompt } from './copilot/send-to-prompt.js';
 import { writeImageToClipboard } from './copilot/clipboard.js';
-import { SourceLocator } from './source-locator.js';
 import { provenanceAt } from './session/token-provenance.js';
 import { contrastAt, runAxe } from './session/a11y.js';
-import type { LocateResult } from './locator-rank.js';
 
 /** Owns the webview panel, the typed message channel, and the browser session behind it. */
 export class BrowserPanel {
@@ -21,7 +19,6 @@ export class BrowserPanel {
   private readonly disposables: vscode.Disposable[] = [];
   private session: BrowserSession | undefined;
   private resizeTimer: NodeJS.Timeout | undefined;
-  private readonly locator = new SourceLocator();
   private lastViewport = { width: 1280, height: 800 };
   private pickMode = false;
 
@@ -249,26 +246,17 @@ export class BrowserPanel {
     return capture(cdp, annotations, this.captureDir(), stamp());
   }
 
-  /** PLAN §4.5: save PNGs, resolve sources, compose context, then open chat with attachments. */
+  /** PLAN §4.5: save PNGs, compose a short context header, then open chat with attachments. */
   public async sendToPrompt(annotations: Annotation[]): Promise<void> {
     try {
       const res = await this.captureNow(annotations);
-
-      // Rank a source file per annotated component (§4.3). Unresolvable ones are simply absent
-      // from the payload rather than guessed at.
-      const sources = new Map<string, LocateResult>();
-      for (const a of annotations) {
-        if (!a.componentRef) continue;
-        try { sources.set(a.id, await this.locator.locate(a.componentRef)); } catch { /* best effort */ }
-      }
-
       const url = this.session?.url ?? '';
       const vp = this.lastViewport;
       const text = composeContext({
         url, route: routeOf(url),
         timestamp: new Date().toISOString(),
         emulation: { viewport: { width: vp.width, height: vp.height, dpr: 1 } },
-        annotations, sources, captureDir: res.dir,
+        annotations, captureDir: res.dir,
       });
 
       const send = await sendToPrompt(text, [res.cleanPath, res.annotatedPath]);

@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { composeContext, routeOf, type ComposeInput } from '../../src/extension/copilot/composer.js';
 import type { Annotation } from '../../src/shared/annotations.js';
 import type { ComponentInfo } from '../../src/shared/agent-api.js';
-import type { LocateResult } from '../../src/extension/locator-rank.js';
 
 const component = (over: Partial<ComponentInfo> = {}): ComponentInfo => ({
   id: 1, framework: 'react', name: 'UserCard', selectorHint: 'UserCard', ancestry: ['App', 'UserCard'],
@@ -16,7 +15,6 @@ const base = (over: Partial<ComposeInput> = {}): ComposeInput => ({
   timestamp: '2026-08-03T00:00:00.000Z',
   emulation: { viewport: { width: 375, height: 812, dpr: 2 }, devicePreset: 'iPhone' },
   annotations: [],
-  sources: new Map<string, LocateResult>(),
   captureDir: '/w/.ux-companion/captures/x',
   ...over,
 });
@@ -30,39 +28,34 @@ describe('context composer', () => {
     expect(out).toContain('(iPhone)');
   });
 
-  it('lists annotated components with their resolved file and alternates', () => {
+  it('carries the text written on callouts through as notes', () => {
     const a: Annotation = {
       id: 'a1', kind: 'callout', from: { x: 0, y: 0 }, to: { x: 0, y: 0 },
       color: '#fff', text: 'date picker should be above this', componentRef: component(),
     };
-    const sources = new Map<string, LocateResult>([['a1', {
-      best: { path: 'src/features/ReportFilter.tsx', score: 70, reasons: ['exported-def'] },
-      alternates: [{ path: 'src/legacy/ReportFilter.tsx', score: 20, reasons: [] }],
-    }]]);
-    const out = composeContext(base({ annotations: [a], sources }));
-    expect(out).toContain('[1] callout "date picker should be above this" → UserCard');
-    expect(out).toContain('src/features/ReportFilter.tsx');
-    expect(out).toContain('alternates: src/legacy/ReportFilter.tsx');
-    expect(out).toContain('props:');
-    expect(out).toContain('Ada Lovelace');
+    const out = composeContext(base({ annotations: [a] }));
+    expect(out).toContain('[1] date picker should be above this');
   });
 
-  it('says so when a production build made the component name unreliable', () => {
+  it('leaves component internals out of the prompt — the image says it better', () => {
     const a: Annotation = {
       id: 'a1', kind: 'rect', from: { x: 0, y: 0 }, to: { x: 5, y: 5 }, color: '#fff',
-      componentRef: component({ name: 'H2', degraded: 'production-build' }),
+      componentRef: component(),
     };
     const out = composeContext(base({ annotations: [a] }));
-    expect(out).toContain('production build — name unreliable');
+    expect(out).not.toContain('Annotated components');
+    expect(out).not.toContain('UserCard');
+    expect(out).not.toContain('Ada Lovelace');
+    expect(out).not.toContain('props:');
   });
 
-  it('does not invent a component when none resolved', () => {
+  it('says nothing at all about unlabelled marks', () => {
     const a: Annotation = {
       id: 'a1', kind: 'rect', from: { x: 0, y: 0 }, to: { x: 5, y: 5 }, color: '#fff',
       componentRef: null,
     };
     const out = composeContext(base({ annotations: [a] }));
-    expect(out).toContain('no component resolved');
+    expect(out).not.toContain('Notes on the annotated screenshot');
   });
 
   it('never tells the user to paste from the clipboard', () => {

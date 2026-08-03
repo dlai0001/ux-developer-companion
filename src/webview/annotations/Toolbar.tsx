@@ -6,7 +6,8 @@ import { post } from '../post.js';
  * Markup toolbar. Kept deliberately sparse: one Shape button rather than one per shape, one
  * colour swatch rather than a palette, and the panel-level tools tucked behind a toggle.
  * Picking a tool switches to annotate mode implicitly — the mode is a consequence of the
- * choice, never something to find first.
+ * choice, never something to find first — and switches Browse off with it. A finished mark
+ * leaves nothing armed, so the toolbar's resting state is "no tool, no browsing".
  */
 const stroke = {
   fill: 'none', stroke: 'currentColor', strokeWidth: 1.8,
@@ -85,9 +86,16 @@ export function Toolbar(): JSX.Element {
     pick(next);
   };
 
-  const browse = (): void => {
-    useStore.getState().setMode('browse');
-    post({ type: 'set-mode', mode: 'browse' });
+  /**
+   * Browse is a toggle, not a destination. Switching it off parks the panel in `idle`, where a
+   * click does nothing at all — the guard against navigating the app by accident.
+   */
+  const toggleBrowse = (): void => {
+    const s = useStore.getState();
+    const next = s.mode === 'browse' ? 'idle' : 'browse';
+    if (next === 'idle') { s.setTool(null); post({ type: 'set-tool', tool: null }); }
+    s.setMode(next);
+    post({ type: 'set-mode', mode: next });
   };
 
   const btn = (active: boolean, disabled = false): React.CSSProperties => ({
@@ -114,8 +122,14 @@ export function Toolbar(): JSX.Element {
         borderBottom: '1px solid var(--vscode-panel-border, #333)',
       }}
     >
-      <button data-testid="tool-browse" title="Browse — interact with the page (Esc)"
-              style={btn(mode === 'browse')} onClick={browse}>
+      <button
+        data-testid="tool-browse"
+        title={mode === 'browse'
+          ? 'Browsing — click to stop forwarding clicks to the page'
+          : 'Browsing off — click to interact with the page again'}
+        style={btn(mode === 'browse')}
+        onClick={toggleBrowse}
+      >
         {ICONS.browse}Browse
       </button>
 
@@ -172,7 +186,17 @@ export function Toolbar(): JSX.Element {
         {ICONS.clear}Clear{count > 0 ? ` (${count})` : ''}
       </button>
 
-      <span style={{ flex: 1 }} />
+      {/* Says why clicks are doing nothing, in the one place the eye is already looking. */}
+      <span style={{ flex: 1, padding: '0 10px', minWidth: 0 }}>
+        {mode !== 'browse' && (
+          <span
+            data-testid="browse-off-hint"
+            style={{ fontSize: 11, color: 'var(--vscode-descriptionForeground, #999)' }}
+          >
+            Click Browse to toggle browsing mode
+          </span>
+        )}
+      </span>
 
       <button
         data-testid="toggle-tools"

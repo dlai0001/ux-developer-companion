@@ -20,6 +20,7 @@ export function BrowserView(): JSX.Element {
   const drawing = useRef(false);
   const viewport = useStore((s) => s.viewport);
   const mode = useStore((s) => s.mode);
+  const pickMode = useStore((s) => s.pickMode);
 
   // Frame pump: the store holds only the newest frame, so a slow draw drops stale ones.
   const frame = useStore((s) => s.frame);
@@ -84,7 +85,9 @@ export function BrowserView(): JSX.Element {
 
   const sendMouse = (kind: MouseKind, e: React.MouseEvent | React.WheelEvent,
                      delta?: { deltaX: number; deltaY: number }): void => {
-    if (mode !== 'browse') return; // annotate mode captures the pointer instead (M3)
+    // A pick click is forwarded from any mode: the host consumes it to resolve a component
+    // rather than passing it to the page, so it cannot navigate anything.
+    if (mode !== 'browse' && !(pickMode && kind === 'down')) return;
     const { x, y } = toPage(e);
     post({ type: 'mouse', kind, x, y, modifiers: mods(e), ...(delta ?? {}) });
   };
@@ -97,7 +100,12 @@ export function BrowserView(): JSX.Element {
         ref={canvasRef}
         tabIndex={0}
         data-testid="browser-canvas"
-        style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000', outline: 'none', cursor: mode === 'browse' ? 'default' : 'crosshair' }}
+        style={{
+          width: '100%', height: '100%', objectFit: 'contain', background: '#000', outline: 'none',
+          // idle looks inert on purpose: no crosshair to suggest drawing, no pointer to suggest
+          // the page is live.
+          cursor: mode === 'annotate' || pickMode ? 'crosshair' : 'default',
+        }}
         onMouseDown={(e) => { e.preventDefault(); canvasRef.current?.focus(); sendMouse('down', e); }}
         onMouseUp={(e) => sendMouse('up', e)}
         onMouseMove={(e) => {
