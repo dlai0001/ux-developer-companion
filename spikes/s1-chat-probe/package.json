@@ -1,0 +1,26 @@
+{
+  "name": "s1-chat-probe",
+  "displayName": "S1/S2 Chat Probe",
+  "description": "Throwaway spike probe — enumerates chat commands, tests vscode.lm image parts, attaches PNGs to native chat.",
+  "version": "0.0.1",
+  "publisher": "spike",
+  "engines": { "vscode": "^1.128.0" },
+  "enabledApiProposals": ["chatReferenceBinaryData"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      { "command": "s1.enumerate", "title": "S1: Enumerate + lm probe" },
+      { "command": "s1.attachAgent", "title": "S1: Open chat with PNG attached (agent mode)" },
+      { "command": "s1.attachAsk", "title": "S1: Open chat with PNG attached (ask mode)" }
+    ],
+    "chatParticipants": [
+      {
+        "id": "spike.ux",
+        "name": "uxspike",
+        "description": "Spike participant — dumps the request object it receives",
+        "isSticky": false
+      }
+    ]
+  }
+}

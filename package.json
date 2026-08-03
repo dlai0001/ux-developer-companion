@@ -1,0 +1,79 @@
+{
+  "name": "ux-developer-companion",
+  "displayName": "UX Developer Companion",
+  "description": "Embedded browser, component inspector, and annotated screenshots — works with GitHub Copilot Chat.",
+  "version": "0.0.1",
+  "publisher": "dlaisoft",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.128.0"
+  },
+  "categories": [
+    "Visualization",
+    "Debuggers",
+    "Other"
+  ],
+  "main": "./out/extension.js",
+  "activationEvents": [],
+  "contributes": {
+    "commands": [
+      {
+        "command": "uxCompanion.open",
+        "title": "UX Companion: Open Browser Panel",
+        "category": "UX Companion"
+      }
+    ],
+    "configuration": {
+      "title": "UX Developer Companion",
+      "properties": {
+        "uxCompanion.browserPath": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Absolute path to Edge/Chrome/Chromium. Leave empty to auto-discover (Edge → Chrome → Chromium)."
+        },
+        "uxCompanion.screencastQuality": {
+          "type": "number",
+          "default": 60,
+          "minimum": 10,
+          "maximum": 100,
+          "markdownDescription": "JPEG quality for the screencast. Frame rate is never reduced to save bandwidth — see the idle-pause behaviour instead."
+        },
+        "uxCompanion.captureDir": {
+          "type": "string",
+          "default": ".ux-companion/captures",
+          "markdownDescription": "Workspace-relative directory for saved screenshots and context text."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "test:unit": "vitest run --dir test/unit",
+    "test:integration": "vitest run --dir test/integration",
+    "test:ext": "node ./test/extension/runTests.mjs",
+    "test": "npm run typecheck && npm run test:unit && npm run test:integration && npm run test:ext",
+    "fixtures:setup": "node scripts/setup-fixtures.mjs",
+    "fixtures:serve": "node scripts/serve-fixtures.mjs",
+    "package": "vsce package --out ux-developer-companion.vsix"
+  },
+  "dependencies": {
+    "chrome-remote-interface": "^0.34.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@types/vscode": "1.125.0",
+    "@vscode/test-electron": "^3.1.0",
+    "@vscode/vsce": "^3.2.0",
+    "devtools-protocol": "^0.0.1672245",
+    "esbuild": "^0.28.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8",
+    "zustand": "^5.0.2"
+  }
+}

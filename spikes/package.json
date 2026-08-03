@@ -1,0 +1,21 @@
+{
+  "name": "spikes",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@types/vscode": "^1.125.0"
+  },
+  "dependencies": {
+    "chrome-remote-interface": "^0.34.0",
+    "esbuild": "^0.28.1",
+    "react-devtools-core": "^6.1.5"
+  }
+}

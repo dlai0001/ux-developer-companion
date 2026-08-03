@@ -1,0 +1,28 @@
+<!doctype html><meta charset=utf-8><title>S4 screencast fixture</title>
+<style>
+  body { font: 14px system-ui; margin: 0; padding: 16px; background: #fff; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .cell { padding: 12px; border: 1px solid #ccc; border-radius: 6px; }
+  #spinner { width: 80px; height: 80px; border-radius: 50%;
+             background: conic-gradient(#2f81f7, #ff3ea5, #2f81f7); }
+  .anim #spinner { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg) } }
+  textarea { width: 100%; height: 120px; font: 13px monospace; }
+</style>
+<body>
+  <h1>S4 screencast fixture</h1>
+  <div id="spinner"></div>
+  <textarea id="ta" placeholder="typing target"></textarea>
+  <div class="grid" id="grid"></div>
+  <script>
+    // Text-heavy content so JPEG quality differences show up in byte size.
+    const g = document.getElementById('grid');
+    for (let i = 0; i < 60; i++) {
+      const d = document.createElement('div');
+      d.className = 'cell';
+      d.textContent = 'Cell ' + i + ' — ' + Math.random().toString(36).slice(2, 20);
+      g.appendChild(d);
+    }
+    if (location.search.includes('anim')) document.body.classList.add('anim');
+  </script>
+</body>

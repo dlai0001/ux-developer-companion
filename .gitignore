@@ -1,0 +1,19 @@
+node_modules/
+out/
+dist/
+*.vsix
+.vscode-test/
+.ux-companion/
+
+# Spike scratch — findings + scripts are tracked, artefacts are not
+spikes/_out/
+spikes/_repos/
+spikes/node_modules/
+spikes/fixtures/*/node_modules/
+spikes/fixtures/*/bundle-*.js
+spikes/s7-corp-probe/probe.vsix
+
+# Fixture builds
+fixtures/*/node_modules/
+fixtures/*/dist/
+fixtures/*/.angular/

@@ -1,0 +1,16 @@
+{
+  "name": "s4-input-probe",
+  "displayName": "S4 Input Fidelity Probe",
+  "description": "Throwaway spike: screencast into a webview with input forwarding + keystroke-to-pixel instrumentation.",
+  "version": "0.0.1",
+  "publisher": "spike",
+  "engines": { "vscode": "^1.128.0" },
+  "activationEvents": ["onStartupFinished"],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      { "command": "s4.open", "title": "S4: Open input probe" },
+      { "command": "s4.dump", "title": "S4: Dump stats to _out/s4-input-results.json" }
+    ]
+  }
+}

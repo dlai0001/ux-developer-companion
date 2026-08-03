@@ -1,0 +1,26 @@
+<!doctype html><meta charset=utf-8><title>S5 token provenance fixture</title>
+<style>
+  :root { --color-primary: #2f81f7; --brand: var(--color-primary); }
+  .parent { --color-primary: #e03131; }          /* (c) overridden on a parent */
+  #a { background-color: #17a2b8; }              /* (a) direct hex */
+  #b { background-color: var(--color-primary); } /* (b) var from :root */
+  #c { background-color: var(--color-primary); } /* (c) resolves to parent override */
+  #d { background-color: var(--brand); }         /* (d) var -> var indirection */
+  #e-anc { color: var(--color-primary); }        /* (e) inherited color */
+  #f { background: var(--color-primary); }       /* shorthand, not longhand */
+  div { width: 120px; height: 60px; margin: 6px; font: 12px system-ui; color: #fff }
+</style>
+<body>
+  <div id="a">a direct</div>
+  <div id="b">b root var</div>
+  <div class="parent"><div id="c">c parent var</div></div>
+  <div id="d">d var-of-var</div>
+  <div id="e-anc"><span id="e">e inherited</span></div>
+  <div id="f">f shorthand</div>
+  <div id="host"></div>
+  <script>
+    // (g) shadow DOM — relevant for the deferred Lit adapter
+    const h = document.getElementById('host').attachShadow({ mode: 'open' });
+    h.innerHTML = `<style>:host{--sd:#9c36b5} .s{background-color:var(--sd);width:120px;height:60px}</style><div class="s" id="s">g shadow</div>`;
+  </script>
+</body>

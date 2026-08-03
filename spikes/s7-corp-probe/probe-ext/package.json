@@ -1,0 +1,11 @@
+{
+  "name": "ux-probe",
+  "displayName": "UX Companion Sideload Probe",
+  "description": "Hello-world extension used only to verify that a locally built .vsix can be sideloaded.",
+  "version": "0.0.1",
+  "publisher": "uxprobe",
+  "engines": { "vscode": "^1.100.0" },
+  "activationEvents": ["onStartupFinished"],
+  "main": "./extension.js",
+  "contributes": { "commands": [{ "command": "uxProbe.hello", "title": "UX Probe: Hello" }] }
+}
