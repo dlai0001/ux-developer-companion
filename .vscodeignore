@@ -13,4 +13,12 @@ esbuild.mjs
 vitest.config.ts
 ux-companion-build-plan.md
 MANUAL-QA.md
+CONTRIBUTING.md
+docs/**
+.github/**
+.ux-companion/**
 .gitignore
+
+# Never ship a previous build inside the new one.
+*.vsix
+package-lock.json

@@ -5,14 +5,28 @@
   "version": "0.0.3",
   "publisher": "dlaisoft",
   "license": "MIT",
+  "author": {
+    "name": "David Lai",
+    "email": "david@dlaisoft.com",
+    "url": "https://dlai0001.github.io/portfolio"
+  },
   "engines": {
     "vscode": "^1.128.0"
   },
   "categories": [
     "Visualization",
     "Debuggers",
+    "Testing",
     "Other"
   ],
+  "galleryBanner": {
+    "color": "#1f2430",
+    "theme": "dark"
+  },
+  "pricing": "Free",
+  "sponsor": {
+    "url": "https://github.com/sponsors/dlai0001"
+  },
   "main": "./out/extension.js",
   "activationEvents": [],
   "contributes": {
@@ -100,8 +114,13 @@
   "icon": "media/icon.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/dlaisoft/ux-developer-companion"
+    "url": "https://github.com/dlai0001/ux-developer-companion.git"
   },
+  "homepage": "https://github.com/dlai0001/ux-developer-companion#readme",
+  "bugs": {
+    "url": "https://github.com/dlai0001/ux-developer-companion/issues"
+  },
+  "qna": "https://github.com/dlai0001/ux-developer-companion/discussions",
   "keywords": [
     "browser",
     "responsive",
@@ -110,6 +129,12 @@
     "angular",
     "copilot",
     "screenshot",
-    "design"
+    "design",
+    "annotation",
+    "devtools",
+    "inspector",
+    "ai",
+    "ui",
+    "frontend"
   ]
 }

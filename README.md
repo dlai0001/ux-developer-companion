@@ -1,115 +1,180 @@
+<div align="center">
+
+<img src="https://raw.githubusercontent.com/dlai0001/ux-developer-companion/main/media/icon.png" width="112" alt="UX Developer Companion" />
+
 # UX Developer Companion
 
-An embedded browser inside VS Code for UI-focused web development. Browse your running app,
-annotate what's wrong, inspect and override live component state, simulate visual/network/
-accessibility conditions — then send screenshots and component-resolved context to **GitHub
-Copilot Chat** with one keystroke.
+**Point at the bug. Press one key. Let Copilot see what you see.**
 
-> Works with GitHub Copilot Chat. Not affiliated with, endorsed by, or sponsored by GitHub or
+An embedded browser inside VS Code that turns "this button looks wrong" into a screenshot,
+an annotation, and a precise prompt — without ever leaving the editor.
+
+[![Marketplace](https://img.shields.io/visual-studio-marketplace/v/dlaisoft.ux-developer-companion?label=marketplace&color=0098FF)](https://marketplace.visualstudio.com/items?itemName=dlaisoft.ux-developer-companion)
+[![Installs](https://img.shields.io/visual-studio-marketplace/i/dlaisoft.ux-developer-companion?color=0098FF)](https://marketplace.visualstudio.com/items?itemName=dlaisoft.ux-developer-companion)
+[![Rating](https://img.shields.io/visual-studio-marketplace/r/dlaisoft.ux-developer-companion?color=0098FF)](https://marketplace.visualstudio.com/items?itemName=dlaisoft.ux-developer-companion&ssr=false#review-details)
+[![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/dlai0001/ux-developer-companion/blob/main/LICENSE)
+[![Sponsor](https://img.shields.io/badge/sponsor-%E2%9D%A4-db61a2)](https://github.com/sponsors/dlai0001)
+[![Portfolio](https://img.shields.io/badge/built%20by-David%20Lai-1f6feb)](https://dlai0001.github.io/portfolio)
+
+</div>
+
+> Works with **GitHub Copilot Chat**. Not affiliated with, endorsed by, or sponsored by GitHub or
 > Microsoft.
 
 ---
+
+## The problem it solves
+
+Describing a UI defect to an AI assistant is the slowest part of front-end work. You screenshot,
+crop, find the file, guess the component name, type a paragraph of context — and the model still
+asks which element you meant.
+
+UX Developer Companion collapses that loop. Your app runs in a panel next to your code. You circle
+the broken thing, type a note on it, and press `cmd/ctrl+alt+p`. Copilot Chat receives a clean
+screenshot, the annotated screenshot, and a context block describing the URL, route, viewport, and
+emulation state — as real attachments, not pasted text.
 
 ## What it does
 
 | | |
 |---|---|
-| **Embedded browser** | Headless Edge/Chrome streamed into a panel via CDP, with full mouse/keyboard/wheel forwarding and a navigation bar. |
-| **Annotations** | Rectangle, arrow, and Sketch-style callouts. Each mark resolves the component underneath it at creation time. |
-| **Send to Chat** | `cmd/ctrl+alt+p` attaches a clean screenshot, an annotated screenshot, and a short context block (URL, route, viewport, emulation state, and any text you wrote on the marks) to Copilot Chat in agent mode. |
-| **Inspector** | Component tree, click-to-pick, and live prop/state editing for React and Angular. |
-| **Responsive** | Device presets with DPR/touch/UA, a breakpoint slider built from your app's own media queries, and a responsive matrix. |
-| **Colour & a11y** | Eyedropper that names the CSS custom property *and where it is defined*, WCAG contrast checking, vision-deficiency and media emulation, and an axe-core scan. |
-| **State lab** | Force `:hover`/`:focus`/`:active`, intercept requests (fail/delay/mock), throttle the network, and snapshot/restore storage profiles. |
+| **Embedded browser** | Headless Edge/Chrome streamed into a VS Code panel over CDP, with full mouse, keyboard, and wheel forwarding, plus a navigation bar. |
+| **Annotations** | Box, circle, arrow, text, and Sketch-style callouts. Geometry is stored in page CSS pixels, so marks stay anchored through scroll, resize, and device changes. |
+| **Send to Chat** | `cmd/ctrl+alt+p` attaches both screenshots and a short context block to Copilot Chat in agent mode. One keystroke, no pasting. |
+| **Inspector** | Component tree, click-to-pick, and live prop/state editing for **React** and **Angular**. |
+| **Responsive** | Device presets with DPR, touch, and UA overrides; a breakpoint slider built from *your app's own* media queries; a responsive matrix. |
+| **Colour & a11y** | Eyedropper that names the CSS custom property *and where it is defined*, WCAG 2.1 contrast checks, vision-deficiency and media emulation, and a bundled axe-core scan. |
+| **State lab** | Force `:hover`/`:focus`/`:active`, intercept requests (fail, delay, mock), throttle the network, and snapshot/restore storage profiles. |
 
-## Requirements
+## Install
+
+From the Marketplace:
+
+```bash
+code --install-extension dlaisoft.ux-developer-companion
+```
+
+Or search **UX Developer Companion** in the Extensions view (`cmd/ctrl+shift+X`).
+
+### Requirements
 
 - **VS Code 1.128 or newer.**
-- **Microsoft Edge or Google Chrome installed locally.** The extension never downloads a
-  browser. If auto-discovery fails, set `uxCompanion.browserPath`.
+- **Microsoft Edge or Google Chrome installed locally.** The extension never downloads a browser.
+  If auto-discovery fails, set `uxCompanion.browserPath`.
 - A running dev server to point it at.
+- **GitHub Copilot Chat** — only for the Send to Chat feature. Everything else works without it.
 
-## Getting started
+## Quick start
 
-1. Run **UX Companion: Open Browser Panel** from the Command Palette.
-2. Enter your dev server URL in the address bar.
-3. Click **Browse** to drive the app; pick a markup tool to mark something up, then press
-   **Send to Chat**. Each finished mark drops the tool and switches Browse off, so a stray
-   click can neither draw again nor navigate — click **Browse** when you want to move around.
+1. Start your dev server.
+2. Run **UX Companion: Open Browser Panel** from the Command Palette (`cmd/ctrl+shift+P`).
+3. Type your dev server URL in the address bar.
+4. Click **Browse** to drive the app and navigate to the screen you care about.
+5. Pick a markup tool, draw on the problem, and type a note on it.
+6. Press `cmd/ctrl+alt+p` — **Send to Chat**.
+
+Each finished mark drops the tool *and* switches Browse off, leaving the panel in a neutral state
+where a stray click can neither draw again nor navigate the app you are annotating. Click
+**Browse** when you want to move around again.
+
+## Commands
+
+| Command | Default keybinding |
+|---|---|
+| UX Companion: Open Browser Panel | — |
+| UX Companion: Send to Chat | `cmd+alt+p` / `ctrl+alt+p` |
+| UX Companion: Copy Annotated Screenshot to Clipboard | — |
+
+Single-key tool shortcuts while the panel is focused: `B` box · `C` circle · `A` arrow · `T` text ·
+`O` callout · `⌘Z` undo · `Esc` disarm.
 
 ## Settings
 
 | Setting | Default | Description |
 |---|---|---|
 | `uxCompanion.browserPath` | *(empty)* | Absolute path to Edge/Chrome/Chromium. Empty = auto-discover (Edge → Chrome → Chromium). |
-| `uxCompanion.screencastQuality` | `60` | JPEG quality for the stream. Frame rate is never reduced to save bandwidth — see below. |
-| `uxCompanion.captureDir` | `.ux-companion/captures` | Workspace-relative directory for saved screenshots and context. |
+| `uxCompanion.screencastQuality` | `60` | JPEG quality for the stream, 10–100. Frame rate is never reduced to save bandwidth. |
+| `uxCompanion.captureDir` | `.ux-companion/captures` | Workspace-relative directory for saved screenshots and context text. |
 
 ## How screenshots reach Copilot
 
 Screenshots are **attached directly** to the chat input — no pasting, no manual steps. The
-extension writes both PNGs to `captureDir` and passes them to VS Code's chat command as image
+extension writes both PNGs to `captureDir` and hands them to VS Code's chat command as image
 attachments.
 
-**Copying to the clipboard is a separate, optional command.** It is deliberately *not* how
-images reach chat: VS Code's chat paste handler ignores images unless some installed extension
-enables the `chatReferenceBinaryData` API proposal, so pasting a screenshot into Copilot Chat
-silently does nothing on a stock install. Use **Send to Prompt** instead.
+**Copying to the clipboard is a separate, optional command.** It is deliberately *not* how images
+reach chat: VS Code's chat paste handler ignores images unless some installed extension enables the
+`chatReferenceBinaryData` API proposal, so pasting a screenshot into Copilot Chat silently does
+nothing on a stock install. Use **Send to Chat** instead.
 
-## Corporate / offline installation
+## Privacy and offline use
 
-The extension makes **no runtime downloads** and has **no backend**. axe-core is bundled.
+- **No telemetry.** The extension collects and transmits nothing.
+- **No backend.** There is no service to sign into and no account.
+- **No runtime downloads.** axe-core is bundled in the `.vsix`.
+- Screenshots and context are written to your workspace under `captureDir` and go only where you
+  send them.
 
-**Sideloading a `.vsix`:**
-
-```bash
-code --install-extension ux-developer-companion.vsix
-```
-
-If your organisation restricts extension installation, the install will be refused by policy —
-that is an org setting, not an extension failure.
-
-**Building from source:**
-
-```bash
-npm install && npm run fixtures:setup && npm run build && npm run package
-```
-
-Behind a proxy, `npm install` needs the usual `HTTPS_PROXY` / `NODE_EXTRA_CA_CERTS`
-environment. Note that `npm run test:ext` downloads a VS Code build from
-`update.code.visualstudio.com`; if that host is blocked, run the extension-host suite on an
-unrestricted machine — `test:unit` and `test:integration` do not need it.
+This makes it viable behind a corporate proxy. See
+[docs/troubleshooting.md](https://github.com/dlai0001/ux-developer-companion/blob/main/docs/troubleshooting.md#corporate-and-offline-environments)
+for sideloading and proxy notes.
 
 ## Known limitations
+
+Stated plainly, because a tool that oversells itself wastes your afternoon.
 
 - **IME and international composition** are imperfect over CDP. Complex input methods may not
   compose correctly in the embedded browser.
 - **Angular requires a dev build.** `window.ng` only exists in development mode; against a
   production build the Angular adapter reports that it cannot resolve components.
-- **React production builds are read-only.** Props and state remain readable, but component
-  names are minified, so the inspector reports the build as degraded, source-file resolution is
-  skipped, and overrides are refused rather than silently ignored.
-- **Source-file resolution is ranked, not certain.** Measured on real repositories, ranked
-  top-1 accuracy is roughly 87% (React) and 95% (Angular); the payload therefore includes
-  runner-up candidates. Treat the path as a strong hint.
+- **React production builds are read-only.** Props and state remain readable, but component names
+  are minified, so the inspector reports the build as degraded, source-file resolution is skipped,
+  and overrides are refused rather than silently ignored.
+- **Source-file resolution is ranked, not certain.** Measured on real repositories, ranked top-1
+  accuracy is roughly 87% (React) and 95% (Angular); the payload therefore includes runner-up
+  candidates. Treat the path as a strong hint.
 - **Typing latency.** Keeping the headless screencast alive requires focus emulation, which can
   make an individual key dispatch take a few hundred milliseconds under load.
-- **Cross-origin stylesheets** cannot be read, so breakpoints and token provenance only cover
-  stylesheets the page can access.
+- **Cross-origin stylesheets** cannot be read, so breakpoint detection and token provenance only
+  cover stylesheets the page can access.
 
-## Development
+## Documentation
 
-```bash
-npm run build          # host + webview + page-agent bundles
-npm run watch          # rebuild on change
-npm run fixtures:setup # install the React + Angular fixture apps
-npm run fixtures:serve # serve them on :5173 (dev), :5174 (prod), :4200 (Angular)
-npm test               # typecheck + unit + integration + extension-host
-```
+- **[User guide](https://github.com/dlai0001/ux-developer-companion/blob/main/docs/user-guide.md)** — every panel, tool, and workflow in depth.
+- **[Troubleshooting](https://github.com/dlai0001/ux-developer-companion/blob/main/docs/troubleshooting.md)** — browser discovery, black canvas, corporate networks, Copilot attachment.
+- **[Changelog](https://github.com/dlai0001/ux-developer-companion/blob/main/CHANGELOG.md)** — what changed and why.
+- **[Contributing](https://github.com/dlai0001/ux-developer-companion/blob/main/CONTRIBUTING.md)** — build from source, run the test suites, open a PR.
 
-See `MANUAL-QA.md` for the checks CI cannot perform, and `spikes/FINDINGS.md` for the
-research that shaped several non-obvious design decisions.
+## Support this project
 
-## Licence
+UX Developer Companion is free, MIT-licensed, and built in the open with no telemetry and no paid
+tier. If it saves you time, sponsorship keeps it maintained.
 
-MIT
+<div align="center">
+
+### [❤️ Sponsor on GitHub](https://github.com/sponsors/dlai0001)
+
+</div>
+
+Free ways to help, all of them genuinely useful:
+
+- ⭐ **[Star the repo](https://github.com/dlai0001/ux-developer-companion)**
+- ✍️ **[Leave a Marketplace review](https://marketplace.visualstudio.com/items?itemName=dlaisoft.ux-developer-companion&ssr=false#review-details)**
+- 🐛 **[Report a bug or request a feature](https://github.com/dlai0001/ux-developer-companion/issues)**
+
+## About the author
+
+Built by **[David Lai](https://dlai0001.github.io/portfolio)** — Principal Software Developer
+working at the intersection of AI tooling and front-end engineering.
+
+This extension is a working sample of that: a Chrome DevTools Protocol client, a React inspector, a
+ranked source-file locator, and an LLM context pipeline, shipped as one VS Code extension with unit,
+integration, and extension-host test suites.
+
+**[→ See more of my work at dlai0001.github.io/portfolio](https://dlai0001.github.io/portfolio)**
+
+*Available for consulting and senior/principal roles in AI-assisted developer tooling.*
+
+## License
+
+[MIT](https://github.com/dlai0001/ux-developer-companion/blob/main/LICENSE) © David Lai
