@@ -96,5 +96,20 @@
     "typescript": "^5.7.2",
     "vitest": "^2.1.8",
     "zustand": "^5.0.2"
-  }
+  },
+  "icon": "media/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dlaisoft/ux-developer-companion"
+  },
+  "keywords": [
+    "browser",
+    "responsive",
+    "accessibility",
+    "react",
+    "angular",
+    "copilot",
+    "screenshot",
+    "design"
+  ]
 }

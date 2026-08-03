@@ -25,7 +25,10 @@ const builds = [
     format: 'cjs',
     target: 'node20',
     // `vscode` is injected by the extension host and must never be bundled.
-    external: ['vscode'],
+    // bufferutil / utf-8-validate are OPTIONAL native accelerators for `ws` (via
+    // chrome-remote-interface). ws loads them in a try/catch and falls back to its JS
+    // implementation, so leaving them unbundled is correct — they are not a missing dependency.
+    external: ['vscode', 'bufferutil', 'utf-8-validate'],
   },
   {
     ...common,
