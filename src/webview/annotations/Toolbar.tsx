@@ -115,11 +115,11 @@ export function Toolbar(): JSX.Element {
   const shapeActive = mode === 'annotate' && (tool === 'rect' || tool === 'ellipse');
 
   return (
+    <div style={{ borderBottom: '1px solid var(--vscode-panel-border, #333)' }}>
     <div
       data-testid="markup-toolbar"
       style={{
-        display: 'flex', alignItems: 'center', gap: 2, padding: '4px 8px', flexWrap: 'wrap',
-        borderBottom: '1px solid var(--vscode-panel-border, #333)',
+        display: 'flex', alignItems: 'center', gap: 2, padding: '4px 8px 0', flexWrap: 'wrap',
       }}
     >
       <button
@@ -186,17 +186,7 @@ export function Toolbar(): JSX.Element {
         {ICONS.clear}Clear{count > 0 ? ` (${count})` : ''}
       </button>
 
-      {/* Says why clicks are doing nothing, in the one place the eye is already looking. */}
-      <span style={{ flex: 1, padding: '0 10px', minWidth: 0 }}>
-        {mode !== 'browse' && (
-          <span
-            data-testid="browse-off-hint"
-            style={{ fontSize: 11, color: 'var(--vscode-descriptionForeground, #999)' }}
-          >
-            Click Browse to toggle browsing mode
-          </span>
-        )}
-      </span>
+      <span style={{ flex: 1 }} />
 
       <button
         data-testid="toggle-tools"
@@ -220,6 +210,23 @@ export function Toolbar(): JSX.Element {
       >
         {ICONS.send}Send to Chat
       </button>
+    </div>
+
+    {/*
+      Its own full-width strip, always present even when empty. Squeezed into the button row it
+      wrapped to four lines in a narrow panel, and appearing/disappearing resized the toolbar and
+      shunted the page canvas up and down on every toggle. Reserving the line costs 17px and
+      keeps the canvas still.
+    */}
+    <div
+      data-testid="browse-off-hint"
+      style={{
+        height: 17, padding: '0 10px 2px', fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden',
+        textOverflow: 'ellipsis', color: 'var(--vscode-descriptionForeground, #999)',
+      }}
+    >
+      {mode !== 'browse' ? 'Click Browse to toggle browsing mode' : ''}
+    </div>
     </div>
   );
 }
