@@ -77,6 +77,8 @@ a device-preset change — geometry is stored in page CSS px specifically for th
 ☐ After each mark lands, no tool is highlighted, Browse is off, the caption "Click Browse to
 toggle browsing mode" is showing, and clicking the page does nothing — no new mark, no
 navigation. ☐ Clicking Browse restores page interaction; clicking it again parks the panel.
+☐ Marks stay visible while parked AND while browsing, and clicks still reach the page with
+marks on screen. ☐ A successful Send to Chat clears them; a failed one leaves them alone.
 
 ## 9. Corporate environment 🏢 ☐
 

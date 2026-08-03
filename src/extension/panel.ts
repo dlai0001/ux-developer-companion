@@ -266,6 +266,9 @@ export class BrowserPanel {
       }
       const note = send.skipped.length ? ` (${send.skipped.length} attachment(s) skipped)` : '';
       this.post({ type: 'status', text: `Sent to Copilot Chat with ${send.attached.length} image(s)${note}.`, tone: 'info' });
+      // The marks have done their job and are now in the attached image. Only on success —
+      // both failure paths above leave them alone so nothing is lost to a send that did not land.
+      this.post({ type: 'annotations-sent' });
     } catch (e) {
       this.post({ type: 'status', text: `Send failed: ${(e as Error).message}`, tone: 'error' });
     }

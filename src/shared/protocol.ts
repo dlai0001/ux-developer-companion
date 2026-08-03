@@ -34,6 +34,8 @@ export type HostToWebview =
   /** Result of anchor-resolving a specific annotation (PLAN §4.4). */
   | { type: 'annotation-resolved'; id: string; component: ComponentInfo | null }
   | { type: 'capture-complete'; dir: string; cleanPath: string; annotatedPath: string }
+  /** Sent ONLY after chat actually accepted the payload — a failed send keeps the marks. */
+  | { type: 'annotations-sent' }
   /** Command-triggered: the webview owns the annotation list, so it replies with the action. */
   | { type: 'request-send-to-prompt' }
   | { type: 'request-copy-to-clipboard' }

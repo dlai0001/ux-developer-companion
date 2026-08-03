@@ -29,6 +29,7 @@ function App(): JSX.Element {
         case 'component-resolved': s.setSelected(m.component); break;
         case 'annotation-resolved': s.setAnnotationComponent(m.id, m.component); break;
         case 'capture-complete': break;   // status message already reports the path
+        case 'annotations-sent': s.clearAnnotations(); break;
         case 'request-send-to-prompt':
           post({ type: 'send-to-prompt', annotations: useStore.getState().annotations });
           break;

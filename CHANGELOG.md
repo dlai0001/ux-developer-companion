@@ -16,6 +16,18 @@ All notable changes to UX Developer Companion.
   component, props, state and ranked source files were the bulk of the prompt and mostly
   restated what the annotated image already shows. Only text written on callouts and labels
   carries through, under "Notes on the annotated screenshot".
+- **Send to Chat clears the annotations** once chat has accepted them — they are in the
+  attached image at that point. A send that fails keeps them, so nothing is lost.
+
+### Fixed
+- **Annotations stayed on screen only while a tool was armed.** Parking the panel or switching
+  to Browse made the marks vanish although Clear still counted them. They now persist in every
+  mode until cleared or sent.
+- **Black canvas on first load.** On a static page the forced repaint after `startScreencast`
+  was the only chance at a frame, and if it landed before Chrome had armed the screencast no
+  frame was ever produced — the canvas stayed black until the user navigated. The first frame
+  is now seeded from a direct screenshot when no frame arrives, and stream start/stop pairs are
+  serialized so a resize landing mid-start cannot wedge the stream.
 
 ## [0.0.3] — 2026-08-03
 
