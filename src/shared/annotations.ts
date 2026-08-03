@@ -2,7 +2,7 @@
 // annotations survive scrolling, resizing and device-metrics changes.
 import type { ComponentInfo } from './agent-api.js';
 
-export type AnnotationKind = 'rect' | 'arrow' | 'callout';
+export type AnnotationKind = 'rect' | 'ellipse' | 'arrow' | 'text' | 'callout';
 
 export interface Point { x: number; y: number }
 
@@ -40,13 +40,19 @@ export function normalizeRect(a: Point, b: Point): { x: number; y: number; width
 /** Anchor point used to resolve a component for each annotation kind (PLAN §4.4). */
 export function anchorPoint(a: Annotation): Point {
   if (a.kind === 'callout') return a.anchor ?? a.to;
+  if (a.kind === 'text') return a.from;           // the label sits on the thing it names
   if (a.kind === 'arrow') return a.to;            // the head points AT the thing
-  const r = normalizeRect(a.from, a.to);          // rect: centre
+  const r = normalizeRect(a.from, a.to);          // rect/ellipse: centre
   return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) };
 }
 
+/** Kinds placed by a click rather than a drag — they take their size from their text. */
+export function isClickPlaced(kind: AnnotationKind): boolean {
+  return kind === 'callout' || kind === 'text';
+}
+
 export function isDegenerate(a: Annotation): boolean {
-  if (a.kind === 'callout') return false;
+  if (isClickPlaced(a.kind)) return false;
   const r = normalizeRect(a.from, a.to);
   return r.width < 3 && r.height < 3;
 }

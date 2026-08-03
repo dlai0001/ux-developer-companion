@@ -2,6 +2,19 @@
 
 All notable changes to UX Developer Companion.
 
+## [0.0.2] — 2026-08-03
+
+### Changed
+- **Markup toolbar is now always visible** with icon buttons — Browse, Box, Circle, Arrow,
+  Text, Callout — instead of text labels hidden behind an Annotate mode toggle. Picking a tool
+  switches to annotate mode implicitly, so there is no mode to discover first.
+- **"Send to Prompt" is now "Send to Chat"**, and is a primary-styled button in the toolbar.
+
+### Added
+- **Circle** and **Text** annotation kinds. Text draws a haloed label with no bubble.
+- **Undo** (⌘Z) alongside Clear.
+- Single-key tool shortcuts: `B` box, `C` circle, `A` arrow, `T` text, `O` callout, `Esc` browse.
+
 ## [0.0.1] — 2026-08-03
 
 First working build. Every milestone below ends with its acceptance tests green.

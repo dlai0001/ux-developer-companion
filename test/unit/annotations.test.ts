@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  anchorPoint, isDegenerate, newId, normalizeRect, type Annotation,
+  anchorPoint, isClickPlaced, isDegenerate, newId, normalizeRect, type Annotation,
 } from '../../src/shared/annotations.js';
 
 const mk = (over: Partial<Annotation>): Annotation => ({
@@ -32,6 +32,23 @@ describe('annotation geometry', () => {
     expect(isDegenerate(mk({ from: { x: 5, y: 5 }, to: { x: 60, y: 60 } }))).toBe(false);
     // A callout is placed by a click and gets its size from its text.
     expect(isDegenerate(mk({ kind: 'callout', from: { x: 5, y: 5 }, to: { x: 5, y: 5 } }))).toBe(false);
+  });
+
+  it('anchors a circle at its centre and a text label at its origin', () => {
+    expect(anchorPoint(mk({ kind: 'ellipse', from: { x: 0, y: 0 }, to: { x: 20, y: 40 } })))
+      .toEqual({ x: 10, y: 20 });
+    expect(anchorPoint(mk({ kind: 'text', from: { x: 9, y: 11 }, to: { x: 9, y: 11 } })))
+      .toEqual({ x: 9, y: 11 });
+  });
+
+  it('knows which kinds are placed by a click rather than dragged', () => {
+    // Text and callout size themselves from their content, so a zero-drag placement is valid;
+    // treating them as degenerate would silently discard every one the user creates.
+    expect(isClickPlaced('text')).toBe(true);
+    expect(isClickPlaced('callout')).toBe(true);
+    for (const k of ['rect', 'ellipse', 'arrow'] as const) expect(isClickPlaced(k)).toBe(false);
+    expect(isDegenerate(mk({ kind: 'text', from: { x: 5, y: 5 }, to: { x: 5, y: 5 } }))).toBe(false);
+    expect(isDegenerate(mk({ kind: 'ellipse', from: { x: 5, y: 5 }, to: { x: 6, y: 6 } }))).toBe(true);
   });
 
   it('generates distinct ids', () => {

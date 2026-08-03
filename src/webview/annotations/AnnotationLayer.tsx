@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  anchorPoint, isDegenerate, newId, type Annotation, type AnnotationKind, type Point,
+  anchorPoint, isClickPlaced, isDegenerate, newId,
+  type Annotation, type AnnotationKind, type Point,
 } from '../../shared/annotations.js';
 import { drawAnnotations } from '../../shared/compositor.js';
 import { useStore } from '../state/store.js';
@@ -60,7 +61,7 @@ export function AnnotationLayer({ viewport }: Props): JSX.Element | null {
     // Anchor-resolve on creation for ALL kinds (PLAN §4.4).
     const p = anchorPoint(a);
     post({ type: 'resolve-annotation', id: a.id, x: p.x, y: p.y });
-    if (a.kind === 'callout') {
+    if (isClickPlaced(a.kind)) {
       const c = canvasRef.current;
       const r = c?.getBoundingClientRect();
       const scale = r && viewport ? r.width / viewport.width : 1;
@@ -81,10 +82,15 @@ export function AnnotationLayer({ viewport }: Props): JSX.Element | null {
           e.preventDefault();
           const p = toPage(e);
           const kind: AnnotationKind = tool;
-          setDraft({
+          const fresh: Annotation = {
             id: newId(++seed.current), kind, from: p, to: p, color,
             ...(kind === 'callout' ? { text: '', anchor: p } : {}),
-          });
+            ...(kind === 'text' ? { text: '' } : {}),
+          };
+          // Text and callout are placed by a click, so commit immediately and open the editor
+          // rather than waiting for a drag that will never come.
+          if (isClickPlaced(kind)) { commit(fresh); return; }
+          setDraft(fresh);
         }}
         onMouseMove={(e) => {
           if (!draft) return;

@@ -23,6 +23,7 @@ export interface AppState {
   setAnnotationText(id: string, text: string): void;
   setAnnotationComponent(id: string, component: ComponentInfo | null): void;
   clearAnnotations(): void;
+  undoAnnotation(): void;
   setTool(tool: AnnotationKind): void;
   setColor(color: string): void;
   setStatus(text: string, tone: 'info' | 'warn' | 'error'): void;
@@ -70,6 +71,7 @@ export const useStore = create<AppState>((set) => ({
     annotations: s.annotations.map((a) => (a.id === id ? { ...a, componentRef: component } : a)),
   })),
   clearAnnotations: () => set({ annotations: [] }),
+  undoAnnotation: () => set((s) => ({ annotations: s.annotations.slice(0, -1) })),
   setTool: (tool) => set({ tool }),
   setColor: (color) => set({ color }),
   setStatus: (text, tone) => set({ status: { text, tone } }),

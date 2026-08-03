@@ -52,6 +52,9 @@ describe.skipIf(!HAVE)('M3 annotations + capture', () => {
       { id: 'a2', kind: 'arrow', from: { x: 320, y: 40 }, to: { x: 420, y: 160 }, color: '#2f81f7' },
       { id: 'a3', kind: 'callout', from: { x: 60, y: 260 }, to: { x: 60, y: 260 },
         color: '#f5a524', text: 'date picker should be above this', anchor: { x: 200, y: 220 } },
+      { id: 'a4', kind: 'ellipse', from: { x: 440, y: 40 }, to: { x: 600, y: 160 }, color: '#17c964' },
+      { id: 'a5', kind: 'text', from: { x: 440, y: 200 }, to: { x: 440, y: 200 },
+        color: '#ff3ea5', text: 'plain label' },
     ];
     const res = await capture(session.connection!, annotations, OUT, 'stamp-1');
 

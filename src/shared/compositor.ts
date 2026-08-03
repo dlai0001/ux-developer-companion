@@ -34,6 +34,16 @@ export function drawOne(ctx: Ctx, a: Annotation, s: number): void {
   if (a.kind === 'rect') {
     const r = normalizeRect(a.from, a.to);
     ctx.strokeRect(r.x * s, r.y * s, r.width * s, r.height * s);
+  } else if (a.kind === 'ellipse') {
+    const r = normalizeRect(a.from, a.to);
+    ctx.beginPath();
+    ctx.ellipse(
+      (r.x + r.width / 2) * s, (r.y + r.height / 2) * s,
+      Math.max(1, (r.width / 2) * s), Math.max(1, (r.height / 2) * s), 0, 0, Math.PI * 2,
+    );
+    ctx.stroke();
+  } else if (a.kind === 'text') {
+    drawLabel(ctx, a, s);
   } else if (a.kind === 'arrow') {
     drawArrow(ctx, a.from.x * s, a.from.y * s, a.to.x * s, a.to.y * s, ARROW_HEAD * s);
   } else {
@@ -102,6 +112,24 @@ export function drawCallout(ctx: Ctx, a: Annotation, s: number): void {
   ctx.fillStyle = '#16202c';
   ctx.textBaseline = 'top';
   lines.forEach((line, i) => ctx.fillText(line, x + pad, y + pad + i * lineHeight));
+}
+
+/** Plain text label — no bubble, no tail. Drawn with a subtle halo so it stays legible
+ *  over busy screenshots without hiding what is underneath. */
+export function drawLabel(ctx: Ctx, a: Annotation, s: number): void {
+  ctx.font = `600 ${Math.round(15 * s)}px system-ui, sans-serif`;
+  ctx.textBaseline = 'top';
+  const lines = wrapText(ctx, a.text ?? '', 320 * s);
+  const lineHeight = Math.round(19 * s);
+  lines.forEach((line, i) => {
+    const x = a.from.x * s;
+    const y = a.from.y * s + i * lineHeight;
+    ctx.lineWidth = Math.max(3, 3 * s);
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+    ctx.strokeText(line, x, y);
+    ctx.fillStyle = a.color;
+    ctx.fillText(line, x, y);
+  });
 }
 
 export function roundRect(ctx: Ctx, x: number, y: number, w: number, h: number, r: number): void {
