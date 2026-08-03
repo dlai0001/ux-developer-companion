@@ -51,9 +51,14 @@ export function AnnotationLayer({ viewport }: Props): JSX.Element | null {
     if (!ctx) return;
     ctx.clearRect(0, 0, c.width, c.height);
     drawAnnotations(ctx, draft ? [...annotations, draft] : annotations, { scale });
-  }, [annotations, draft, viewport, mode]);
+  }, [annotations, draft, viewport, mode, tool]);
 
-  if (mode !== 'annotate' || !tool) return null;
+  /**
+   * Armed means "a click draws". The layer itself is ALWAYS mounted: marks have to stay on
+   * screen while browsing and while parked, so unmounting it would take them with it. When it
+   * is not armed it just stops taking the pointer.
+   */
+  const armed = mode === 'annotate' && tool !== null;
 
   const commit = (a: Annotation): void => {
     if (isDegenerate(a)) { setDraft(null); return; }
@@ -91,9 +96,13 @@ export function AnnotationLayer({ viewport }: Props): JSX.Element | null {
         data-testid="annotation-layer"
         style={{
           position: 'absolute', inset: 0, width: '100%', height: '100%',
-          cursor: 'crosshair', zIndex: 2,
+          cursor: armed ? 'crosshair' : 'default', zIndex: 2,
+          // Unarmed the layer is a pane of glass: the marks show through it, clicks do not
+          // stop at it — browse-mode input still reaches the frame canvas underneath.
+          pointerEvents: armed ? 'auto' : 'none',
         }}
         onMouseDown={(e) => {
+          if (!armed || !tool) return;
           e.preventDefault();
           // Clicking away from an open label commits it and nothing else. preventDefault here
           // means the textarea would otherwise keep focus and the click would start a new mark.
