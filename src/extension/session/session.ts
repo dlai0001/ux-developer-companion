@@ -5,6 +5,7 @@ import { launchBrowser, type LaunchedBrowser } from '../browser/launch.js';
 import { CdpSession } from '../browser/cdp.js';
 import { ScreencastController, DEFAULT_SCREENCAST, type ScreencastOptions } from './screencast.js';
 import { forwardKey, forwardMouse } from './input.js';
+import { InterceptController, THROTTLE_PRESETS, type InterceptRule, type ThrottlePreset } from './intercept.js';
 import { readFileSync } from 'node:fs';
 import { AGENT_BINDING, AGENT_GLOBAL, type ComponentInfo, type ComponentTreeNode,
          type Json, type WriteResult } from '../../shared/agent-api.js';
@@ -36,6 +37,7 @@ export class BrowserSession {
   private currentUrl = '';
   private viewportSize = { width: DEFAULT_SCREENCAST.maxWidth, height: DEFAULT_SCREENCAST.maxHeight };
   private agentInstalled = false;
+  private intercept: InterceptController | undefined;
   private tearingDown = false;
 
   constructor(private readonly cfg: SessionConfig, private readonly events: SessionEvents) {}
@@ -67,6 +69,8 @@ export class BrowserSession {
     this.screencast = new ScreencastController(this.cdp, (f) => this.events.onFrame(f), {
       ...DEFAULT_SCREENCAST, ...this.cfg.screencast,
     });
+
+    this.intercept = new InterceptController(this.cdp);
 
     // Page agent must be installed BEFORE app scripts run so the React devtools hook exists
     // when React registers its renderer (PLAN §4.3).
@@ -218,6 +222,68 @@ export class BrowserSession {
     return this.agent<{ x: number; y: number; width: number; height: number } | null>(
       `a.elementBounds(${x}, ${y})`,
     );
+  }
+
+  // ---------------------------------------------------------------- state lab (§4.6)
+  get activeRuleCount(): number { return this.intercept?.ruleCount ?? 0; }
+
+  async setInterceptRules(rules: InterceptRule[]): Promise<void> {
+    await this.intercept?.setRules(rules);
+  }
+
+  async setThrottle(preset: ThrottlePreset): Promise<void> {
+    await this.cdp?.emulateNetwork({ ...THROTTLE_PRESETS[preset] });
+  }
+
+  /** Force :hover/:focus/:active on the element at a point. */
+  async forcePseudoAt(x: number, y: number, states: string[]): Promise<boolean> {
+    if (!this.cdp) return false;
+    const nodeId = await this.cdp.nodeAt(x, y);
+    if (!nodeId) return false;
+    await this.cdp.forcePseudoState(nodeId, states);
+    return true;
+  }
+
+  /** Snapshot localStorage + sessionStorage + cookies as a named profile. */
+  async snapshotStorage(): Promise<{ local: Record<string, string>; session: Record<string, string>; cookies: unknown[] }> {
+    const stores = await this.cdp?.evaluate<{ local: Record<string, string>; session: Record<string, string> }>(`
+      (() => {
+        const dump = (s) => Object.fromEntries(Object.keys(s).map((k) => [k, s.getItem(k)]));
+        return { local: dump(localStorage), session: dump(sessionStorage) };
+      })()`) ?? { local: {}, session: {} };
+    return { ...stores, cookies: (await this.cdp?.getCookies()) ?? [] };
+  }
+
+  async restoreStorage(profile: { local: Record<string, string>; session: Record<string, string>; cookies?: unknown[] }): Promise<void> {
+    await this.cdp?.evaluate<void>(`
+      (() => {
+        localStorage.clear(); sessionStorage.clear();
+        const l = ${JSON.stringify(profile.local)};
+        const s = ${JSON.stringify(profile.session)};
+        for (const k of Object.keys(l)) localStorage.setItem(k, l[k]);
+        for (const k of Object.keys(s)) sessionStorage.setItem(k, s[k]);
+      })()`);
+    if (profile.cookies?.length) {
+      await this.cdp?.setCookies(profile.cookies as never);
+    }
+  }
+
+  /** State matrix: force each pseudo-state set in turn and screenshot (PLAN §4.6). */
+  async stateMatrix(x: number, y: number, sets: string[][]): Promise<Array<{ states: string[]; png: string }>> {
+    if (!this.cdp) return [];
+    const nodeId = await this.cdp.nodeAt(x, y);
+    if (!nodeId) return [];
+    const out: Array<{ states: string[]; png: string }> = [];
+    try {
+      for (const states of sets) {
+        await this.cdp.forcePseudoState(nodeId, states);
+        await new Promise((r) => setTimeout(r, 150));
+        out.push({ states, png: await this.cdp.captureScreenshot() });
+      }
+    } finally {
+      await this.cdp.forcePseudoState(nodeId, []).catch(() => undefined);
+    }
+    return out;
   }
 
   async sendKey(key: string, code: string, mods: InputModifiers): Promise<void> {

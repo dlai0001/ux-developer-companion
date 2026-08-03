@@ -15,6 +15,8 @@ export type MouseEventType = 'mousePressed' | 'mouseReleased' | 'mouseMoved' | '
 export class CdpSession {
   /** Set before we close deliberately, so our own teardown is not reported as a crash. */
   private closing = false;
+  /** DOM node ids are invalidated by a fresh getDocument, so request it once per document. */
+  private docStale = true;
 
   private constructor(private readonly client: CDPClient) {}
 
@@ -22,6 +24,8 @@ export class CdpSession {
     const client = await CDP({ port, host: '127.0.0.1' });
     const s = new CdpSession(client);
     await s.enableDomains();
+    // Any document swap invalidates node ids, including ones we did not navigate to.
+    client.on('DOM.documentUpdated', () => { s.docStale = true; });
     return s;
   }
 
@@ -89,7 +93,7 @@ export class CdpSession {
   onFrameNavigated(cb: (url: string) => void): void {
     this.client.on('Page.frameNavigated', (p) => {
       // Only the top-level frame changes the address bar.
-      if (!p.frame.parentId) cb(p.frame.url);
+      if (!p.frame.parentId) { this.docStale = true; cb(p.frame.url); }
     });
   }
 
@@ -177,9 +181,13 @@ export class CdpSession {
   async nodeAt(x: number, y: number): Promise<number | null> {
     try {
       // getNodeForLocation resolves against DOM agent node ids, which only exist after the
-      // document has been requested. Without this it returns 0 for every point — and it must
-      // be re-requested after navigation, so do it per call rather than once at enable time.
-      await this.client.DOM.getDocument({ depth: -1, pierce: true });
+      // document has been requested. Request it once per document, NOT per call: a fresh
+      // getDocument invalidates every previously handed-out nodeId, which silently orphans
+      // things keyed by id — forced pseudo-states could then never be released.
+      if (this.docStale) {
+        await this.client.DOM.getDocument({ depth: -1, pierce: true });
+        this.docStale = false;
+      }
       const { nodeId } = await this.client.DOM.getNodeForLocation({ x, y, includeUserAgentShadowDOM: false });
       return nodeId || null;
     } catch { return null; }
@@ -214,6 +222,49 @@ export class CdpSession {
 
   async setEmulatedMedia(features: Array<{ name: string; value: string }>): Promise<void> {
     await this.client.Emulation.setEmulatedMedia({ features });
+  }
+
+  // ---------------------------------------------------------------- fetch interception
+  async fetchEnable(): Promise<void> {
+    await this.client.Fetch.enable({ patterns: [{ urlPattern: '*' }] });
+  }
+
+  async fetchDisable(): Promise<void> {
+    await this.client.Fetch.disable().catch(() => undefined);
+  }
+
+  onRequestPaused(cb: (ev: Protocol.Fetch.RequestPausedEvent) => void): void {
+    this.client.on('Fetch.requestPaused', cb);
+  }
+
+  async continueRequest(requestId: string): Promise<void> {
+    await this.client.Fetch.continueRequest({ requestId }).catch(() => undefined);
+  }
+
+  async fulfillRequest(
+    requestId: string, responseCode: number,
+    responseHeaders: Protocol.Fetch.HeaderEntry[], body: string,
+  ): Promise<void> {
+    await this.client.Fetch.fulfillRequest({ requestId, responseCode, responseHeaders, body })
+      .catch(() => undefined);
+  }
+
+  async failRequest(requestId: string, errorReason: Protocol.Network.ErrorReason): Promise<void> {
+    await this.client.Fetch.failRequest({ requestId, errorReason }).catch(() => undefined);
+  }
+
+  // ---------------------------------------------------------------- cookies
+  async getCookies(): Promise<Protocol.Network.Cookie[]> {
+    const { cookies } = await this.client.Network.getCookies({});
+    return cookies;
+  }
+
+  async setCookies(cookies: Protocol.Network.CookieParam[]): Promise<void> {
+    await this.client.Network.setCookies({ cookies });
+  }
+
+  async clearCookies(): Promise<void> {
+    await this.client.Network.clearBrowserCookies();
   }
 
   // ---------------------------------------------------------------- network
