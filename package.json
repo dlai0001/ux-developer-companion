@@ -65,7 +65,7 @@
     ]
   },
   "scripts": {
-    "build": "node esbuild.mjs",
+    "build": "npm run prepare:axe && node esbuild.mjs",
     "watch": "node esbuild.mjs --watch",
     "typecheck": "tsc --noEmit",
     "test:unit": "vitest run --dir test/unit",
@@ -74,9 +74,11 @@
     "test": "npm run typecheck && npm run test:unit && npm run test:integration && npm run test:ext",
     "fixtures:setup": "node scripts/setup-fixtures.mjs",
     "fixtures:serve": "node scripts/serve-fixtures.mjs",
-    "package": "vsce package --out ux-developer-companion.vsix"
+    "package": "vsce package --out ux-developer-companion.vsix",
+    "prepare:axe": "node -e \"require('fs').copyFileSync('node_modules/axe-core/axe.min.js','media/axe.min.js')\""
   },
   "dependencies": {
+    "axe-core": "^4.12.1",
     "chrome-remote-interface": "^0.34.0",
     "react-devtools-core": "^6.1.5"
   },

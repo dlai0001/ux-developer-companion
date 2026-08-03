@@ -24549,7 +24549,7 @@ function Home() {
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx(UserCard, { user: { name: "Ada Lovelace", role: "Engineer" }, compact: false }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "low-contrast", "data-testid": "low-contrast", children: "Low contrast text used by the M7 contrast checker." }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("input", { "data-testid": "unlabelled", type: "text", placeholder: "Search" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("input", { "data-testid": "unlabelled", type: "text" }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid", "data-testid": "grid", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: "one" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: "two" }),

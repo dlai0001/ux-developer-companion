@@ -9,6 +9,8 @@ import { composeContext, routeOf } from './copilot/composer.js';
 import { sendToPrompt } from './copilot/send-to-prompt.js';
 import { writeImageToClipboard } from './copilot/clipboard.js';
 import { SourceLocator } from './source-locator.js';
+import { provenanceAt } from './session/token-provenance.js';
+import { contrastAt, runAxe } from './session/a11y.js';
 import type { LocateResult } from './locator-rank.js';
 
 /** Owns the webview panel, the typed message channel, and the browser session behind it. */
@@ -143,6 +145,42 @@ export class BrowserPanel {
       case 'request-matrix': {
         const tiles = (await this.session?.responsiveMatrix(msg.widths)) ?? [];
         this.post({ type: 'matrix', tiles });
+        break;
+      }
+      case 'eyedrop': {
+        const cdp = this.session?.connection;
+        this.post({ type: 'eyedrop-result',
+          provenance: cdp ? await provenanceAt(cdp, msg.x, msg.y, 'background-color') : null });
+        break;
+      }
+      case 'contrast-at': {
+        const cdp = this.session?.connection;
+        this.post({ type: 'contrast-result', result: cdp ? await contrastAt(cdp, msg.x, msg.y) : null });
+        break;
+      }
+      case 'run-axe': {
+        const cdp = this.session?.connection;
+        if (!cdp) break;
+        try {
+          // axe is BUNDLED with the extension and injected on demand — never fetched.
+          const axePath = vscode.Uri.joinPath(this.extensionUri, 'media', 'axe.min.js').fsPath;
+          this.post({ type: 'axe-result', violations: await runAxe(cdp, axePath) });
+        } catch (e) {
+          this.post({ type: 'status', text: `axe scan failed: ${(e as Error).message}`, tone: 'error' });
+        }
+        break;
+      }
+      case 'set-vision':
+        await this.session?.connection?.setVisionDeficiency(msg.deficiency);
+        break;
+      case 'set-media':
+        await this.session?.connection?.setEmulatedMedia(msg.features);
+        break;
+      case 'a11y-tree-at': {
+        const cdp = this.session?.connection;
+        if (!cdp) break;
+        const nodeId = await cdp.nodeAt(msg.x, msg.y);
+        this.post({ type: 'a11y-tree', nodes: nodeId ? await cdp.partialAXTree(nodeId) : [] });
         break;
       }
       case 'snap-target':

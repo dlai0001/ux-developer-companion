@@ -38,7 +38,11 @@ export type HostToWebview =
   | { type: 'supports-write'; supported: boolean }
   | { type: 'breakpoints'; widths: number[] }
   | { type: 'matrix'; tiles: Array<{ width: number; png: string }> }
-  | { type: 'snap-bounds'; bounds: { x: number; y: number; width: number; height: number } | null };
+  | { type: 'snap-bounds'; bounds: { x: number; y: number; width: number; height: number } | null }
+  | { type: 'eyedrop-result'; provenance: unknown }
+  | { type: 'contrast-result'; result: unknown }
+  | { type: 'axe-result'; violations: Array<{ id: string; impact: string | null; help: string; nodes: Array<{ target: string[]; html: string }> }> }
+  | { type: 'a11y-tree'; nodes: unknown[] };
 
 export type MouseKind = 'down' | 'up' | 'move' | 'wheel';
 
@@ -76,7 +80,13 @@ export type WebviewToHost =
   | { type: 'set-width'; width: number }
   | { type: 'request-breakpoints' }
   | { type: 'request-matrix'; widths: number[] }
-  | { type: 'snap-target'; x: number; y: number };
+  | { type: 'snap-target'; x: number; y: number }
+  | { type: 'eyedrop'; x: number; y: number }
+  | { type: 'contrast-at'; x: number; y: number }
+  | { type: 'run-axe' }
+  | { type: 'set-vision'; deficiency: string }
+  | { type: 'set-media'; features: Array<{ name: string; value: string }> }
+  | { type: 'a11y-tree-at'; x: number; y: number };
 
 /** Narrowing helper shared by both sides so neither hand-rolls `as` casts. */
 export function isHostToWebview(m: unknown): m is HostToWebview {

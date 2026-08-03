@@ -173,6 +173,54 @@ export class CdpSession {
     await this.client.Input.dispatchKeyEvent(p);
   }
 
+  // ---------------------------------------------------------------- CSS / a11y
+  async nodeAt(x: number, y: number): Promise<number | null> {
+    try {
+      // getNodeForLocation resolves against DOM agent node ids, which only exist after the
+      // document has been requested. Without this it returns 0 for every point — and it must
+      // be re-requested after navigation, so do it per call rather than once at enable time.
+      await this.client.DOM.getDocument({ depth: -1, pierce: true });
+      const { nodeId } = await this.client.DOM.getNodeForLocation({ x, y, includeUserAgentShadowDOM: false });
+      return nodeId || null;
+    } catch { return null; }
+  }
+
+  async computedStyle(nodeId: number): Promise<Protocol.CSS.CSSComputedStyleProperty[]> {
+    const { computedStyle } = await this.client.CSS.getComputedStyleForNode({ nodeId });
+    return computedStyle;
+  }
+
+  async matchedStyles(nodeId: number): Promise<Protocol.CSS.GetMatchedStylesForNodeResponse> {
+    return this.client.CSS.getMatchedStylesForNode({ nodeId });
+  }
+
+  /** Force :hover/:focus/:active etc. on a node (PLAN §4.6 state lab). */
+  async forcePseudoState(nodeId: number, states: string[]): Promise<void> {
+    await this.client.CSS.forcePseudoState({ nodeId, forcedPseudoClasses: states });
+  }
+
+  async partialAXTree(nodeId: number): Promise<Protocol.Accessibility.AXNode[]> {
+    await this.client.Accessibility.enable();
+    const { nodes } = await this.client.Accessibility.getPartialAXTree({ nodeId, fetchRelatives: false });
+    return nodes;
+  }
+
+  // ---------------------------------------------------------------- emulation
+  async setVisionDeficiency(type: string): Promise<void> {
+    await this.client.Emulation.setEmulatedVisionDeficiency({
+      type: type as Protocol.Emulation.SetEmulatedVisionDeficiencyRequest['type'],
+    });
+  }
+
+  async setEmulatedMedia(features: Array<{ name: string; value: string }>): Promise<void> {
+    await this.client.Emulation.setEmulatedMedia({ features });
+  }
+
+  // ---------------------------------------------------------------- network
+  async emulateNetwork(c: { offline: boolean; latency: number; downloadThroughput: number; uploadThroughput: number }): Promise<void> {
+    await this.client.Network.emulateNetworkConditions(c);
+  }
+
   // ---------------------------------------------------------------- misc
   async captureScreenshot(): Promise<string> {
     const { data } = await this.client.Page.captureScreenshot({ format: 'png' });

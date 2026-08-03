@@ -23,8 +23,10 @@ function Home(): JSX.Element {
         Low contrast text used by the M7 contrast checker.
       </p>
 
-      {/* INTENTIONAL axe violation #2: input with no associated label. */}
-      <input data-testid="unlabelled" type="text" placeholder="Search" />
+      {/* INTENTIONAL axe violation #2: input with NO accessible name.
+          Note: a placeholder counts as a name for axe's `label` rule, so it must be absent
+          for this fixture to actually produce the violation it claims. */}
+      <input data-testid="unlabelled" type="text" />
 
       <div className="grid" data-testid="grid">
         <div>one</div><div>two</div><div>three</div>
