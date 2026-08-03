@@ -39,6 +39,29 @@ test('opening twice reveals the existing panel rather than stacking duplicates',
   assert.strictEqual(count, 1, `expected exactly 1 panel, saw ${count}`);
 });
 
+test('contributes the send-to-prompt command and keybinding', async () => {
+  const all = await vscode.commands.getCommands(true);
+  assert.ok(all.includes('uxCompanion.sendToPrompt'), 'uxCompanion.sendToPrompt is not registered');
+  assert.ok(all.includes('uxCompanion.copyCaptureToClipboard'), 'clipboard command is not registered');
+
+  const pkg = vscode.extensions.getExtension(EXT_ID).packageJSON;
+  const kb = (pkg.contributes.keybindings || []).find((k) => k.command === 'uxCompanion.sendToPrompt');
+  assert.ok(kb, 'no keybinding contributed for sendToPrompt');
+  assert.strictEqual(kb.mac, 'cmd+alt+p');
+});
+
+test('the chat-open command this build depends on exists', async () => {
+  // The whole M4 integration rests on workbench.action.chat.open accepting an options bag
+  // with attachFiles. If the command vanishes, fail loudly here rather than at send time.
+  const all = await vscode.commands.getCommands(true);
+  assert.ok(all.includes('workbench.action.chat.open'), 'workbench.action.chat.open is missing');
+});
+
+test('send-to-prompt without a panel warns instead of throwing', async () => {
+  // Command palette invocation with no panel open must not reject.
+  await vscode.commands.executeCommand('uxCompanion.sendToPrompt');
+});
+
 exports.run = async function run() {
   const failures = [];
   for (const { name, fn } of tests) {

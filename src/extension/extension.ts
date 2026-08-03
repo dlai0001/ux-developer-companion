@@ -8,6 +8,22 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('uxCompanion.open', () => {
       BrowserPanel.show(context.extensionUri, version, context.globalStorageUri);
     }),
+    vscode.commands.registerCommand('uxCompanion.sendToPrompt', async () => {
+      const panel = BrowserPanel.active;
+      if (!panel) {
+        void vscode.window.showWarningMessage('Open the UX Companion panel first.');
+        return;
+      }
+      await panel.sendToPromptFromWebview();
+    }),
+    vscode.commands.registerCommand('uxCompanion.copyCaptureToClipboard', async () => {
+      const panel = BrowserPanel.active;
+      if (!panel) {
+        void vscode.window.showWarningMessage('Open the UX Companion panel first.');
+        return;
+      }
+      await panel.copyToClipboardFromWebview();
+    }),
   );
 }
 

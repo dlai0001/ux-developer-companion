@@ -1,8 +1,14 @@
 import * as vscode from 'vscode';
 import { join } from 'node:path';
 import { isWebviewToHost, type HostToWebview, type WebviewToHost } from '../shared/protocol.js';
+import type { Annotation } from '../shared/annotations.js';
 import { BrowserSession } from './session/session.js';
 import { capture } from './session/capture.js';
+import { composeContext, routeOf } from './copilot/composer.js';
+import { sendToPrompt } from './copilot/send-to-prompt.js';
+import { writeImageToClipboard } from './copilot/clipboard.js';
+import { SourceLocator } from './source-locator.js';
+import type { LocateResult } from './locator-rank.js';
 
 /** Owns the webview panel, the typed message channel, and the browser session behind it. */
 export class BrowserPanel {
@@ -12,6 +18,8 @@ export class BrowserPanel {
   private readonly disposables: vscode.Disposable[] = [];
   private session: BrowserSession | undefined;
   private resizeTimer: NodeJS.Timeout | undefined;
+  private readonly locator = new SourceLocator();
+  private lastViewport = { width: 1280, height: 800 };
 
   private constructor(
     private readonly panel: vscode.WebviewPanel,
@@ -42,6 +50,19 @@ export class BrowserPanel {
   }
 
   public static get isOpen(): boolean { return BrowserPanel.current !== undefined; }
+  public static get active(): BrowserPanel | undefined { return BrowserPanel.current; }
+
+  /**
+   * Command entry points. The annotations live in the webview store, so ask for them and let
+   * the webview post the corresponding action back.
+   */
+  public async sendToPromptFromWebview(): Promise<void> {
+    this.post({ type: 'request-send-to-prompt' });
+  }
+
+  public async copyToClipboardFromWebview(): Promise<void> {
+    this.post({ type: 'request-copy-to-clipboard' });
+  }
 
   public post(message: HostToWebview): void {
     void this.panel.webview.postMessage(message);
@@ -94,6 +115,25 @@ export class BrowserPanel {
       case 'set-tool':
       case 'set-color':
         break;   // purely webview-side state
+      case 'send-to-prompt':
+        await this.sendToPrompt(msg.annotations);
+        break;
+      case 'copy-to-clipboard': {
+        try {
+          const res = await this.captureNow(msg.annotations);
+          const r = await writeImageToClipboard(res.annotatedPath);
+          this.post({
+            type: 'status',
+            text: r === 'ok'
+              ? 'Annotated screenshot copied. Note: pasting images into Copilot Chat needs an extension with the chatReferenceBinaryData proposal — use Send to Prompt instead.'
+              : `Clipboard images are not supported on this OS; files saved to ${res.dir}`,
+            tone: r === 'ok' ? 'info' : 'warn',
+          });
+        } catch (e) {
+          this.post({ type: 'status', text: `Clipboard copy failed: ${(e as Error).message}`, tone: 'error' });
+        }
+        break;
+      }
       case 'capture': {
         const cdp = this.session?.connection;
         if (!cdp) { this.post({ type: 'status', text: 'No browser session.', tone: 'error' }); break; }
@@ -106,6 +146,46 @@ export class BrowserPanel {
         }
         break;
       }
+    }
+  }
+
+  private async captureNow(annotations: Annotation[]): Promise<{ dir: string; cleanPath: string; annotatedPath: string }> {
+    const cdp = this.session?.connection;
+    if (!cdp) throw new Error('no browser session');
+    return capture(cdp, annotations, this.captureDir(), stamp());
+  }
+
+  /** PLAN §4.5: save PNGs, resolve sources, compose context, then open chat with attachments. */
+  public async sendToPrompt(annotations: Annotation[]): Promise<void> {
+    try {
+      const res = await this.captureNow(annotations);
+
+      // Rank a source file per annotated component (§4.3). Unresolvable ones are simply absent
+      // from the payload rather than guessed at.
+      const sources = new Map<string, LocateResult>();
+      for (const a of annotations) {
+        if (!a.componentRef) continue;
+        try { sources.set(a.id, await this.locator.locate(a.componentRef)); } catch { /* best effort */ }
+      }
+
+      const url = this.session?.url ?? '';
+      const vp = this.lastViewport;
+      const text = composeContext({
+        url, route: routeOf(url),
+        timestamp: new Date().toISOString(),
+        emulation: { viewport: { width: vp.width, height: vp.height, dpr: 1 } },
+        annotations, sources, captureDir: res.dir,
+      });
+
+      const send = await sendToPrompt(text, [res.cleanPath, res.annotatedPath]);
+      if (!send.ok) {
+        this.post({ type: 'status', text: `Could not open chat: ${send.detail ?? 'unknown error'}. Files are in ${res.dir}`, tone: 'error' });
+        return;
+      }
+      const note = send.skipped.length ? ` (${send.skipped.length} attachment(s) skipped)` : '';
+      this.post({ type: 'status', text: `Sent to Copilot Chat with ${send.attached.length} image(s)${note}.`, tone: 'info' });
+    } catch (e) {
+      this.post({ type: 'status', text: `Send failed: ${(e as Error).message}`, tone: 'error' });
     }
   }
 
@@ -131,7 +211,10 @@ export class BrowserPanel {
         onFrame: (f) => this.post(f),
         onUrlChanged: (url) => this.post({ type: 'url-changed', url }),
         onStatus: (text, tone) => this.post({ type: 'status', text, tone }),
-        onViewportChanged: (width, height) => this.post({ type: 'viewport-changed', width, height }),
+        onViewportChanged: (width, height) => {
+          this.lastViewport = { width, height };
+          this.post({ type: 'viewport-changed', width, height });
+        },
       },
     );
     try {

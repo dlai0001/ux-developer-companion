@@ -24,6 +24,12 @@ function App(): JSX.Element {
         case 'component-resolved': s.setSelected(m.component); break;
         case 'annotation-resolved': s.setAnnotationComponent(m.id, m.component); break;
         case 'capture-complete': break;   // status message already reports the path
+        case 'request-send-to-prompt':
+          post({ type: 'send-to-prompt', annotations: useStore.getState().annotations });
+          break;
+        case 'request-copy-to-clipboard':
+          post({ type: 'copy-to-clipboard', annotations: useStore.getState().annotations });
+          break;
       }
     };
     window.addEventListener('message', onMessage);

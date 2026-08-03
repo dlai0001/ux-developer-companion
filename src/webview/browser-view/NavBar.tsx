@@ -49,9 +49,17 @@ export function NavBar(): JSX.Element {
       </button>
       {mode === 'annotate' && <AnnotateTools />}
       <button
+        data-testid="send-to-prompt"
+        style={{ ...btn, background: 'var(--vscode-button-background, #0e639c)' }}
+        title="Attach screenshots + context to Copilot Chat (cmd/ctrl+alt+p)"
+        onClick={() => post({ type: 'send-to-prompt', annotations: useStore.getState().annotations })}
+      >
+        Send to Prompt
+      </button>
+      <button
         data-testid="capture"
         style={btn}
-        title="Capture clean + annotated screenshots"
+        title="Save clean + annotated screenshots to disk"
         onClick={() => post({ type: 'capture', annotations: useStore.getState().annotations })}
       >
         Capture

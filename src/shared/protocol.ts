@@ -29,7 +29,10 @@ export type HostToWebview =
   | { type: 'component-resolved'; component: ComponentInfo | null }
   /** Result of anchor-resolving a specific annotation (PLAN §4.4). */
   | { type: 'annotation-resolved'; id: string; component: ComponentInfo | null }
-  | { type: 'capture-complete'; dir: string; cleanPath: string; annotatedPath: string };
+  | { type: 'capture-complete'; dir: string; cleanPath: string; annotatedPath: string }
+  /** Command-triggered: the webview owns the annotation list, so it replies with the action. */
+  | { type: 'request-send-to-prompt' }
+  | { type: 'request-copy-to-clipboard' };
 
 export type MouseKind = 'down' | 'up' | 'move' | 'wheel';
 
@@ -55,7 +58,9 @@ export type WebviewToHost =
   | { type: 'resolve-annotation'; id: string; x: number; y: number }
   | { type: 'set-tool'; tool: AnnotationKind }
   | { type: 'set-color'; color: string }
-  | { type: 'capture'; annotations: Annotation[] };
+  | { type: 'capture'; annotations: Annotation[] }
+  | { type: 'send-to-prompt'; annotations: Annotation[] }
+  | { type: 'copy-to-clipboard'; annotations: Annotation[] };
 
 /** Narrowing helper shared by both sides so neither hand-rolls `as` casts. */
 export function isHostToWebview(m: unknown): m is HostToWebview {
