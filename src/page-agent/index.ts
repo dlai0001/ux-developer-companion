@@ -3,6 +3,8 @@
 import * as backend from 'react-devtools-core/backend';
 import { AGENT_BINDING, AGENT_GLOBAL, type ComponentInfo, type ComponentTreeNode,
          type Framework, type FrameworkAdapter, type Json, type WriteResult } from '../shared/agent-api.js';
+import { drawAnnotations } from '../shared/compositor.js';
+import type { Annotation } from '../shared/annotations.js';
 import { ReactAdapter } from './adapters/react.js';
 import { AngularAdapter } from './adapters/angular.js';
 
@@ -17,6 +19,13 @@ interface AgentApi {
   supportsWrite(): boolean;
   /** Media-query breakpoints for the M6 slider. */
   breakpoints(): number[];
+  /**
+   * Draw annotations over a base screenshot and return PNG base64 (PLAN §4.4).
+   * Compositing lives here, in the page, because the extension host has no canvas — and
+   * because serializing the drawing functions across module boundaries breaks under any
+   * transform that rewrites imports.
+   */
+  composite(baseB64: string, annotations: Annotation[]): Promise<string>;
 }
 
 declare global {
@@ -58,6 +67,21 @@ const api: AgentApi = {
   writeState: (id, path, value) =>
     activeAdapter()?.writeState(id, path, value) ?? { ok: false, reason: 'unsupported' },
   supportsWrite: () => activeAdapter()?.supportsWrite ?? false,
+  composite: async (baseB64, annotations) => {
+    const img = new Image();
+    img.src = `data:image/png;base64,${baseB64}`;
+    await img.decode();
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return baseB64;
+    ctx.drawImage(img, 0, 0);
+    // The screenshot is in device pixels; annotation geometry is in page CSS px.
+    const scale = img.naturalWidth / Math.max(1, window.innerWidth);
+    drawAnnotations(ctx, annotations, { scale });
+    return canvas.toDataURL('image/png').split(',')[1] ?? baseB64;
+  },
   breakpoints: () => {
     const out = new Set<number>();
     for (const sheet of Array.from(document.styleSheets)) {

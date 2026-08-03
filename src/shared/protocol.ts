@@ -3,6 +3,7 @@
 // the unions rather than inventing parallel channels.
 
 import type { ComponentInfo } from './agent-api.js';
+import type { Annotation, AnnotationKind } from './annotations.js';
 
 /** Screencast frame pushed host -> webview. */
 export interface FrameMessage {
@@ -25,7 +26,10 @@ export type HostToWebview =
   | { type: 'mode-changed'; mode: Mode }
   /** Page CSS size pinned via setDeviceMetricsOverride — the webview needs it to map coordinates. */
   | { type: 'viewport-changed'; width: number; height: number }
-  | { type: 'component-resolved'; component: ComponentInfo | null };
+  | { type: 'component-resolved'; component: ComponentInfo | null }
+  /** Result of anchor-resolving a specific annotation (PLAN §4.4). */
+  | { type: 'annotation-resolved'; id: string; component: ComponentInfo | null }
+  | { type: 'capture-complete'; dir: string; cleanPath: string; annotatedPath: string };
 
 export type MouseKind = 'down' | 'up' | 'move' | 'wheel';
 
@@ -47,7 +51,11 @@ export type WebviewToHost =
   | ({ type: 'mouse'; kind: MouseKind; x: number; y: number; deltaX?: number; deltaY?: number;
        modifiers: InputModifiers })
   | { type: 'resize'; width: number; height: number }
-  | { type: 'resolve-at'; x: number; y: number };
+  | { type: 'resolve-at'; x: number; y: number }
+  | { type: 'resolve-annotation'; id: string; x: number; y: number }
+  | { type: 'set-tool'; tool: AnnotationKind }
+  | { type: 'set-color'; color: string }
+  | { type: 'capture'; annotations: Annotation[] };
 
 /** Narrowing helper shared by both sides so neither hand-rolls `as` casts. */
 export function isHostToWebview(m: unknown): m is HostToWebview {

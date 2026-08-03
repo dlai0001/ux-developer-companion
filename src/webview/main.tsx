@@ -22,6 +22,8 @@ function App(): JSX.Element {
         case 'frame': s.setFrame(`data:image/jpeg;base64,${m.data}`); break;
         case 'viewport-changed': s.setViewport({ width: m.width, height: m.height }); break;
         case 'component-resolved': s.setSelected(m.component); break;
+        case 'annotation-resolved': s.setAnnotationComponent(m.id, m.component); break;
+        case 'capture-complete': break;   // status message already reports the path
       }
     };
     window.addEventListener('message', onMessage);

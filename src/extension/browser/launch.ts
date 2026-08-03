@@ -108,7 +108,13 @@ async function attemptLaunch(opts: LaunchOptions): Promise<LaunchedBrowser> {
     '--no-first-run', '--no-default-browser-check',
     '--disable-background-networking', '--disable-features=Translate',
     ...extraArgs,
-  ], { stdio: ['ignore', 'pipe', 'pipe'] });
+  ], {
+    stdio: ['ignore', 'pipe', 'pipe'],
+    // Own process group so the WHOLE tree can be reaped. proc.kill() only signals the parent;
+    // Chrome's renderer/GPU/network children survive and accumulate, and once enough of them
+    // are running a fresh launch exceeds its timeout and looks like a launch failure.
+    detached: process.platform !== 'win32',
+  });
 
   // Accumulate stderr: the "DevTools listening on ws://" line is interleaved with heavy noise
   // and can split across chunk boundaries, so a per-chunk regex silently misses it.
@@ -126,21 +132,36 @@ async function attemptLaunch(opts: LaunchOptions): Promise<LaunchedBrowser> {
         const [p, ws] = readFileSync(portFile, 'utf8').split('\n');
         if (p && ws) {
           return { proc, port: Number(p), wsPath: ws.trim(), via: 'DevToolsActivePort',
-                   kill: () => { try { proc.kill(); } catch { /* already gone */ } } };
+                   kill: () => killTree(proc) };
         }
       }
       const m = /DevTools listening on ws:\/\/([^/]+)(\/devtools\/browser\/\S+)/.exec(stderr);
       if (m?.[1] && m[2]) {
         return { proc, port: Number(m[1].split(':').pop()), wsPath: m[2], via: 'stderr',
-                 kill: () => { try { proc.kill(); } catch { /* already gone */ } } };
+                 kill: () => killTree(proc) };
       }
       await new Promise((r) => setTimeout(r, 100));
     }
   } catch (e) {
-    proc.kill();
+    killTree(proc);
     throw e;
   }
   // MUST kill on the timeout path, or an orphan keeps the profile and poisons every retry.
-  proc.kill();
+  killTree(proc);
   throw new Error(`Browser port discovery timed out after ${timeoutMs}ms.\n${stderr.slice(-1500)}`);
+}
+
+/** Kill the browser and every process it spawned. */
+export function killTree(proc: ChildProcess): void {
+  if (proc.pid === undefined) return;
+  if (process.platform === 'win32') {
+    try { spawn('taskkill', ['/pid', String(proc.pid), '/T', '/F'], { stdio: 'ignore' }); } catch { /* gone */ }
+    return;
+  }
+  try {
+    // Negative pid targets the process GROUP, which `detached: true` gave us.
+    process.kill(-proc.pid, 'SIGKILL');
+  } catch {
+    try { proc.kill('SIGKILL'); } catch { /* already gone */ }
+  }
 }

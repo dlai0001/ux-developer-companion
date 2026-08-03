@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { InputModifiers, MouseKind } from '../../shared/protocol.js';
 import { useStore } from '../state/store.js';
 import { post } from '../post.js';
+import { AnnotationLayer } from '../annotations/AnnotationLayer.js';
 
 const mods = (e: { altKey: boolean; ctrlKey: boolean; metaKey: boolean; shiftKey: boolean }): InputModifiers => ({
   alt: e.altKey, ctrl: e.ctrlKey, meta: e.metaKey, shift: e.shiftKey,
@@ -114,6 +115,7 @@ export function BrowserView(): JSX.Element {
           post({ type: 'key', key: e.key, code: e.code, modifiers: mods(e) });
         }}
       />
+      <AnnotationLayer viewport={viewport} />
     </div>
   );
 }

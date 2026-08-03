@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { join } from 'node:path';
 import { isWebviewToHost, type HostToWebview, type WebviewToHost } from '../shared/protocol.js';
 import { BrowserSession } from './session/session.js';
+import { capture } from './session/capture.js';
 
 /** Owns the webview panel, the typed message channel, and the browser session behind it. */
 export class BrowserPanel {
@@ -80,11 +81,39 @@ export class BrowserPanel {
       case 'set-mode':
         this.post({ type: 'mode-changed', mode: msg.mode });
         break;
-      case 'resolve-at':
-        // Page agent lands in M2.
-        this.post({ type: 'component-resolved', component: null });
+      case 'resolve-at': {
+        const component = (await this.session?.resolveAt(msg.x, msg.y)) ?? null;
+        this.post({ type: 'component-resolved', component });
         break;
+      }
+      case 'resolve-annotation': {
+        const component = (await this.session?.resolveAt(msg.x, msg.y)) ?? null;
+        this.post({ type: 'annotation-resolved', id: msg.id, component });
+        break;
+      }
+      case 'set-tool':
+      case 'set-color':
+        break;   // purely webview-side state
+      case 'capture': {
+        const cdp = this.session?.connection;
+        if (!cdp) { this.post({ type: 'status', text: 'No browser session.', tone: 'error' }); break; }
+        try {
+          const res = await capture(cdp, msg.annotations, this.captureDir(), stamp());
+          this.post({ type: 'capture-complete', dir: res.dir, cleanPath: res.cleanPath, annotatedPath: res.annotatedPath });
+          this.post({ type: 'status', text: `Captured to ${res.dir}`, tone: 'info' });
+        } catch (e) {
+          this.post({ type: 'status', text: `Capture failed: ${(e as Error).message}`, tone: 'error' });
+        }
+        break;
+      }
     }
+  }
+
+  /** Workspace-relative capture dir, falling back to global storage outside a workspace. */
+  private captureDir(): string {
+    const rel = this.config<string>('captureDir', '.ux-companion/captures');
+    const folder = vscode.workspace.workspaceFolders?.[0];
+    return folder ? join(folder.uri.fsPath, rel) : join(this.storageUri.fsPath, rel);
   }
 
   private async startSession(): Promise<void> {
@@ -94,6 +123,7 @@ export class BrowserPanel {
     this.session = new BrowserSession(
       {
         userDataDir: profile,
+        pageAgentPath: vscode.Uri.joinPath(this.extensionUri, 'out', 'page-agent.js').fsPath,
         ...(browserPath ? { browserPath } : {}),
         screencast: { quality: this.config<number>('screencastQuality', 60) },
       },
@@ -144,4 +174,9 @@ export class BrowserPanel {
     while (this.disposables.length) this.disposables.pop()?.dispose();
     this.panel.dispose();
   }
+}
+
+/** Filesystem-safe ISO timestamp used as the capture folder name. */
+function stamp(): string {
+  return new Date().toISOString().replace(/[:.]/g, '-');
 }
