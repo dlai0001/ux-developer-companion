@@ -2,7 +2,7 @@
   "name": "ux-developer-companion",
   "displayName": "UX Developer Companion",
   "description": "Circle the bug in your running app and press one key \u2014 Copilot Chat gets the screenshot, the annotation, and the context. Embedded browser with a React/Angular inspector and a11y tools.",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "publisher": "dlaisoft",
   "license": "MIT",
   "author": {

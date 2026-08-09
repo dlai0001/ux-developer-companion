@@ -2,6 +2,20 @@
 
 All notable changes to UX Developer Companion.
 
+## [0.0.6] — 2026-08-09
+
+### Fixed
+- **Annotations no longer sit stretched and mis-scaled after the panel resizes.** The overlay
+  redrew only when the annotation model changed, but the canvas sizes itself from its own box
+  and a canvas keeps its old bitmap through a CSS resize — so dragging the panel, wrapping the
+  toolbar or opening Tools left the marks scaled to the old size until something else happened
+  to trigger a redraw. The overlay now watches its own box. A zero-sized box (a collapsed
+  panel) is left alone rather than resizing the canvas to nothing, which would have wiped the
+  marks with no model change to bring them back.
+
+  If your marks disappear the moment you finish drawing one, you are on **0.0.3 or earlier** —
+  that layer unmounted whenever no tool was armed. Fixed in 0.0.4; upgrade.
+
 ## [0.0.5] — 2026-08-09
 
 Listing only — the extension itself is unchanged from 0.0.4.

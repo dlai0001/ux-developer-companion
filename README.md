@@ -16,7 +16,7 @@ an annotation, and a precise prompt — without ever leaving the editor.
   they had nothing to show. Restore them once there are real numbers — vsmarketplacebadges.dev
   serves version/installs/rating and works as soon as the stats object exists.
 -->
-[![Marketplace](https://img.shields.io/badge/marketplace-v0.0.5-0098FF)](https://marketplace.visualstudio.com/items?itemName=dlaisoft.ux-developer-companion)
+[![Marketplace](https://img.shields.io/badge/marketplace-v0.0.6-0098FF)](https://marketplace.visualstudio.com/items?itemName=dlaisoft.ux-developer-companion)
 [![License](https://img.shields.io/github/license/dlai0001/ux-developer-companion?color=green)](https://github.com/dlai0001/ux-developer-companion/blob/main/LICENSE)
 [![Sponsor](https://img.shields.io/badge/sponsor-%E2%9D%A4-db61a2)](https://github.com/sponsors/dlai0001)
 [![Portfolio](https://img.shields.io/badge/built%20by-David%20Lai-1f6feb)](https://dlai0001.github.io/portfolio)
