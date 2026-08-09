@@ -65,6 +65,12 @@ This opens Copilot Chat in agent mode and attaches:
 3. **A short context block** — URL, route, viewport size, active emulation state, and any text you
    wrote on callouts and labels, under "Notes on the annotated screenshot".
 
+<img src="../media/screenshots/send-to-chat.png" width="900" alt="The UX Companion panel beside the file tree: a React app in the embedded browser with a red callout reading 'Make upper case' pointing at the increment button, and Copilot Chat on the right holding clean.png, annotated.png, and a context block naming the source file, props, and state." />
+
+A send in progress. The panel reports *Sent to Copilot Chat with 2 image(s)*, and the chat input on
+the right holds `clean.png` and `annotated.png` as real attachments above the context block — not
+pasted text, and not a link the model has to go fetch.
+
 Both PNGs are also written to `uxCompanion.captureDir` (default `.ux-companion/captures`) alongside
 the context text, so you have a record independent of the chat session.
 
