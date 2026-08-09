@@ -2,6 +2,10 @@
 
 All notable changes to UX Developer Companion.
 
+## [0.0.7] — 2026-08-09
+
+Version bump only — the extension is byte-for-byte the same code as 0.0.6.
+
 ## [0.0.6] — 2026-08-09
 
 ### Fixed
