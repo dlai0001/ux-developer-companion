@@ -19,6 +19,10 @@ docs/**
 .ux-companion/**
 .gitignore
 
+# README images are served from raw.githubusercontent.com, so the Marketplace
+# renders them without them riding along in every install.
+media/screenshots/**
+
 # Never ship a previous build inside the new one.
 *.vsix
 package-lock.json

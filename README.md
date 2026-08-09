@@ -16,6 +16,10 @@ an annotation, and a precise prompt — without ever leaving the editor.
 [![Sponsor](https://img.shields.io/badge/sponsor-%E2%9D%A4-db61a2)](https://github.com/sponsors/dlai0001)
 [![Portfolio](https://img.shields.io/badge/built%20by-David%20Lai-1f6feb)](https://dlai0001.github.io/portfolio)
 
+<img src="https://raw.githubusercontent.com/dlai0001/ux-developer-companion/main/media/screenshots/send-to-chat.png" width="900" alt="The UX Companion panel open beside the file tree: a React app running in the embedded browser with a red callout reading 'Make upper case' pointing at the increment button, and Copilot Chat on the right holding the clean screenshot, the annotated screenshot, and a context block naming the source file, props, and state." />
+
+<em>Circle it, name it, send it — the annotation and both screenshots land in Copilot Chat as real attachments.</em>
+
 </div>
 
 > Works with **GitHub Copilot Chat**. Not affiliated with, endorsed by, or sponsored by GitHub or
