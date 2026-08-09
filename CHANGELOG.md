@@ -2,6 +2,19 @@
 
 All notable changes to UX Developer Companion.
 
+## [0.0.5] — 2026-08-09
+
+Listing only — the extension itself is unchanged from 0.0.4.
+
+### Changed
+- **The Marketplace listing and README now open with a screenshot** of the panel mid-annotation:
+  a callout drawn on a running app, and Copilot Chat holding both captures and the context
+  block. The workflow was described in prose but never shown.
+- **The repository is public.** Every image and documentation link in the listing pointed at
+  `raw.githubusercontent.com`, which serves 404 for a private repository — so the icon, the
+  user guide, troubleshooting, CONTRIBUTING and LICENSE links were all dead on the published
+  page. They resolve now.
+
 ## [0.0.4] — 2026-08-09
 
 ### Changed
