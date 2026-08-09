@@ -37,11 +37,14 @@ export function AnnotationLayer({ viewport }: Props): JSX.Element | null {
     };
   };
 
-  // Redraw whenever the model or size changes.
-  useEffect(() => {
+  const draw = (): void => {
     const c = canvasRef.current;
     if (!c || !viewport) return;
     const rect = c.getBoundingClientRect();
+    // A zero-sized box means the panel is collapsed or not laid out yet. Resizing the canvas
+    // to it would WIPE the marks, and nothing in the model changes on the way back, so the
+    // wipe would stick until the next tool click. Leave the bitmap alone and wait.
+    if (rect.width < 1 || rect.height < 1) return;
     const scale = rect.width / viewport.width;
     if (c.width !== Math.round(rect.width) || c.height !== Math.round(rect.height)) {
       c.width = Math.round(rect.width);
@@ -51,7 +54,26 @@ export function AnnotationLayer({ viewport }: Props): JSX.Element | null {
     if (!ctx) return;
     ctx.clearRect(0, 0, c.width, c.height);
     drawAnnotations(ctx, draft ? [...annotations, draft] : annotations, { scale });
-  }, [annotations, draft, viewport, mode, tool]);
+  };
+  // Held in a ref so the ResizeObserver below always calls the CURRENT draw without having to
+  // re-subscribe every time the model changes.
+  const drawRef = useRef(draw);
+  drawRef.current = draw;
+
+  // Redraw whenever the model changes.
+  useEffect(() => { drawRef.current(); }, [annotations, draft, viewport, mode, tool]);
+
+  // …and whenever the canvas box changes. Dragging the panel, wrapping the toolbar or opening
+  // Tools resizes us without touching the model, and a canvas keeps its old bitmap through a
+  // CSS resize — so without this the marks would sit there stretched and mis-scaled until
+  // something else happened to trigger a redraw.
+  useEffect(() => {
+    const c = canvasRef.current;
+    if (!c) return;
+    const ro = new ResizeObserver(() => drawRef.current());
+    ro.observe(c);
+    return () => ro.disconnect();
+  }, []);
 
   /**
    * Armed means "a click draws". The layer itself is ALWAYS mounted: marks have to stay on
