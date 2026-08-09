@@ -2,7 +2,7 @@
 
 All notable changes to UX Developer Companion.
 
-## [Unreleased]
+## [0.0.4] — 2026-08-09
 
 ### Changed
 - **Finishing a mark now disarms the tool and switches Browse off**, leaving the panel in a
