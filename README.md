@@ -9,10 +9,15 @@
 An embedded browser inside VS Code that turns "this button looks wrong" into a screenshot,
 an annotation, and a precise prompt — without ever leaving the editor.
 
-[![Marketplace](https://img.shields.io/visual-studio-marketplace/v/dlaisoft.ux-developer-companion?label=marketplace&color=0098FF)](https://marketplace.visualstudio.com/items?itemName=dlaisoft.ux-developer-companion)
-[![Installs](https://img.shields.io/visual-studio-marketplace/i/dlaisoft.ux-developer-companion?color=0098FF)](https://marketplace.visualstudio.com/items?itemName=dlaisoft.ux-developer-companion)
-[![Rating](https://img.shields.io/visual-studio-marketplace/r/dlaisoft.ux-developer-companion?color=0098FF)](https://marketplace.visualstudio.com/items?itemName=dlaisoft.ux-developer-companion&ssr=false#review-details)
-[![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/dlai0001/ux-developer-companion/blob/main/LICENSE)
+<!--
+  shields.io retired the whole visual-studio-marketplace/* badge family, so the version badge
+  below is static and must be bumped with package.json at each release. The installs and rating
+  badges are gone entirely: the Marketplace reports no statistics for this extension yet, so
+  they had nothing to show. Restore them once there are real numbers — vsmarketplacebadges.dev
+  serves version/installs/rating and works as soon as the stats object exists.
+-->
+[![Marketplace](https://img.shields.io/badge/marketplace-v0.0.5-0098FF)](https://marketplace.visualstudio.com/items?itemName=dlaisoft.ux-developer-companion)
+[![License](https://img.shields.io/github/license/dlai0001/ux-developer-companion?color=green)](https://github.com/dlai0001/ux-developer-companion/blob/main/LICENSE)
 [![Sponsor](https://img.shields.io/badge/sponsor-%E2%9D%A4-db61a2)](https://github.com/sponsors/dlai0001)
 [![Portfolio](https://img.shields.io/badge/built%20by-David%20Lai-1f6feb)](https://dlai0001.github.io/portfolio)
 

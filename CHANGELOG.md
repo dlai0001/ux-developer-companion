@@ -10,6 +10,10 @@ Listing only — the extension itself is unchanged from 0.0.4.
 - **The Marketplace listing and README now open with a screenshot** of the panel mid-annotation:
   a callout drawn on a running app, and Copilot Chat holding both captures and the context
   block. The workflow was described in prose but never shown.
+- **The badge row no longer reads "retired badge".** shields.io withdrew its entire
+  `visual-studio-marketplace/*` family, so the version, installs and rating badges had all
+  degraded to that placeholder. Version is now a static badge bumped with the release; installs
+  and rating are dropped until the Marketplace actually reports statistics for the extension.
 - **The repository is public.** Every image and documentation link in the listing pointed at
   `raw.githubusercontent.com`, which serves 404 for a private repository — so the icon, the
   user guide, troubleshooting, CONTRIBUTING and LICENSE links were all dead on the published
