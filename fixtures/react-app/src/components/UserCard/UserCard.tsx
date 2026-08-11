@@ -29,7 +29,7 @@ export function UserCard({ user, compact }: UserCardProps): JSX.Element {
       <p data-testid="uc-compact">compact={String(compact)}</p>
       <p data-testid="uc-count">count={count}</p>
       <button data-testid="uc-btn" className="primary-btn" onClick={() => setCount((c) => c + 1)}>
-        increment
+        Increment
       </button>
     </div>
   );
